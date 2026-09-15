@@ -4,6 +4,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'amber';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
+  startContent?: React.ReactNode;
+  endContent?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -14,6 +16,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'sm',
       fullWidth = false,
       disabled = false,
+      startContent,
+      endContent,
       className = '',
       type = 'button',
       ...props
@@ -58,7 +62,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={`${baseStyles} ${variantStyles[variant] || variantStyles.secondary} ${sizeStyles[size] || sizeStyles.sm} ${widthClass} ${className}`}
         {...props}
       >
+        {startContent}
         {children}
+        {endContent}
       </button>
     );
   }

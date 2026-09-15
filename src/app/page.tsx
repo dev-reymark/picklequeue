@@ -10,20 +10,23 @@ import { PlayerListModal } from "@/components/players/PlayerListModal";
 import { AddPlayerModal } from "@/components/players/AddPlayerModal";
 import { TutorialSpotlight } from "@/components/tutorial/TutorialSpotlight";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { Logo } from "@/components/ui";
+import { Logo, Drawer } from "@/components/ui";
 
 export default function DashboardPage() {
   const { players, courts, queue, loadDemoData } = usePickleballStore();
   const [hasMounted, setHasMounted] = useState(false);
   const [isPlayerListOpen, setIsPlayerListOpen] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
+  const [isWaitingDrawerOpen, setIsWaitingDrawerOpen] = useState(false);
 
-  // Global Keyboard Shortcuts (N to add player, ? for shortcuts, Esc to close)
+  // Global Keyboard Shortcuts (N to add player, W for waiting drawer, Esc to close)
   useKeyboardShortcuts({
     onAddPlayer: () => setIsAddPlayerOpen(true),
+    onToggleWaitingPool: () => setIsWaitingDrawerOpen((prev) => !prev),
     onEscape: () => {
       setIsPlayerListOpen(false);
       setIsAddPlayerOpen(false);
+      setIsWaitingDrawerOpen(false);
     },
   });
 
@@ -70,8 +73,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-dots text-slate-950 dark:text-zinc-100 animate-in fade-in duration-300">
-      {/* Top Header */}
-      <Header />
+      {/* Top Header with Waiting Pool trigger */}
+      <Header onOpenWaitingPool={() => setIsWaitingDrawerOpen(true)} />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -83,27 +86,27 @@ export default function DashboardPage() {
                 Welcome to PICKLEQUEUE
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl">
-                The session is currently empty. You can register players in the
-                Waiting Pool below, or instantly load a realistic sample
-                tournament with 6 courts, 2 active matches, and queued groups.
+                The session is currently empty. You can register players by opening
+                the Waiting Pool (click <span className="font-semibold text-emerald-600 dark:text-emerald-400">&ldquo;Waiting&rdquo;</span> in the header or press <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-xs">W</kbd>),
+                or instantly load a sample tournament with 6 courts and active rotations.
               </p>
             </div>
             <button
               type="button"
               onClick={loadDemoData}
-              className="whitespace-nowrap px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs"
+              className="whitespace-nowrap px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
             >
               Load Demo Tournament
             </button>
           </div>
         )}
 
-        {/* 2-Column Responsive Layout: Courts (70%) + Queue (30%) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Court Grid */}
+        {/* 2-Column Responsive Layout: Courts + Queue side-by-side on tablet (md:) and desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
+          {/* Left Column: Court Grid (1x1 on tablet, 2x2 on lg, 3x3 on xl) */}
           <div
             id="courts-grid-section"
-            className="lg:col-span-8 xl:col-span-9 space-y-3"
+            className="md:col-span-7 lg:col-span-8 xl:col-span-9 space-y-3"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -119,25 +122,41 @@ export default function DashboardPage() {
             <CourtGrid />
           </div>
 
-          {/* Right Column: Queue Sidebar */}
+          {/* Right Column: Queue Sidebar (sticky so queue stays visible while scrolling) */}
           <div
             id="queue-panel-section"
-            className="lg:col-span-4 xl:col-span-3 h-full"
+            className="md:col-span-5 lg:col-span-4 xl:col-span-3 h-full md:sticky md:top-20"
           >
             <QueuePanel />
           </div>
         </div>
-
-        {/* Bottom Section: Waiting Players Pool */}
-        <div className="pt-2">
-          <WaitingPool onOpenPlayerList={() => setIsPlayerListOpen(true)} />
-        </div>
       </main>
 
       {/* Footer info */}
-      <footer className="border-t border-slate-200 dark:border-zinc-900 py-4 px-4 sm:px-8 text-center text-xs text-slate-400 dark:text-zinc-400">
-        PICKLEQUEUE &bull; Press &ldquo;N&rdquo; to Add Player
+      <footer className="border-t border-slate-200 dark:border-zinc-900 py-4 px-4 sm:px-8 text-center text-xs text-slate-400 dark:text-zinc-400 flex flex-wrap items-center justify-center gap-2">
+        <span>PICKLEQUEUE</span>
+        <span>&bull;</span>
+        <span>Press <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700">W</kbd> for Waiting Pool</span>
+        <span>&bull;</span>
+        <span>Press <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700">N</kbd> to Add Player</span>
       </footer>
+
+      {/* Waiting Players Pool Drawer */}
+      <Drawer
+        isOpen={isWaitingDrawerOpen}
+        onClose={() => setIsWaitingDrawerOpen(false)}
+        title="Waiting Players Pool"
+        description="Select players to form queue groups, rest, or auto-balance matches"
+        size="lg"
+      >
+        <WaitingPool
+          inDrawer
+          onOpenPlayerList={() => {
+            setIsWaitingDrawerOpen(false);
+            setIsPlayerListOpen(true);
+          }}
+        />
+      </Drawer>
 
       {/* Player List Modal */}
       <PlayerListModal

@@ -14,6 +14,7 @@ import {
 import { calculateBestTeams } from '@/lib/matchmaking';
 import { generateId } from '@/lib/utils';
 import { getSampleSessionData } from '@/lib/demo-data';
+import { playSound } from '@/lib/sound';
 
 export interface PickleballStoreState {
   players: Player[];
@@ -389,23 +390,40 @@ export const usePickleballStore = create<PickleballStoreState>()(
             : c
         );
 
-        // Check if auto-assign next group is enabled and a group is queued
-        let nextQueue = [...state.queue];
-        if (state.settings.autoAssignNextGroup && nextQueue.length > 0) {
-          // Handled via immediate next assign if desired
-        }
+        // 2. Determine exiting players status and decrement rest for existing resting players
+        let updatedPlayers = state.players.map((p) => {
+          // If player was on this finished court:
+          if (courtPlayerIds.includes(p.id)) {
+            if (action === 'remove') {
+              return { ...p, status: 'inactive' as const, restGamesRemaining: 0 };
+            }
+            if (action === 'requeue') {
+              return { ...p, status: 'queued' as const, restGamesRemaining: 0 };
+            }
+            if (action === 'resting') {
+              const restGames = state.settings.minimumRestGames > 0 ? state.settings.minimumRestGames : 1;
+              return { ...p, status: 'resting' as const, restGamesRemaining: restGames };
+            }
+            // Default: waiting-pool
+            return { ...p, status: 'waiting' as const, restGamesRemaining: 0 };
+          }
 
-        if (action === 'remove') {
-          // Inactive / removed from session
-          set((s) => ({
-            courts: updatedCourts,
-            games: [newGameRecord, ...s.games],
-            players: s.players.map((p) =>
-              courtPlayerIds.includes(p.id) ? { ...p, status: 'inactive' } : p
-            ),
-          }));
-        } else if (action === 'requeue') {
-          // Put players as a new group at the end of queue
+          // If another player was resting, decrement their rest counter since a match finished
+          if (p.status === 'resting' && (p.restGamesRemaining ?? 0) > 0) {
+            const nextRemaining = (p.restGamesRemaining ?? 1) - 1;
+            if (nextRemaining <= 0) {
+              // Rest period over, automatically return to waiting pool
+              return { ...p, status: 'waiting' as const, restGamesRemaining: 0 };
+            }
+            return { ...p, restGamesRemaining: nextRemaining };
+          }
+
+          return p;
+        });
+
+        // 3. Update queue (if requeue action, append to queue)
+        let updatedQueue = [...state.queue];
+        if (action === 'requeue') {
           const requeuedPlayers = courtPlayerIds
             .map((id) => state.players.find((p) => p.id === id))
             .filter(Boolean) as Player[];
@@ -419,36 +437,47 @@ export const usePickleballStore = create<PickleballStoreState>()(
             balance: match.balance,
             createdAt: Date.now(),
           };
-
-          set((s) => ({
-            courts: updatedCourts,
-            games: [newGameRecord, ...s.games],
-            queue: [...s.queue, newGroup],
-            players: s.players.map((p) =>
-              courtPlayerIds.includes(p.id) ? { ...p, status: 'queued' } : p
-            ),
-          }));
-        } else if (action === 'resting') {
-          // Mark as resting
-          set((s) => ({
-            courts: updatedCourts,
-            games: [newGameRecord, ...s.games],
-            players: s.players.map((p) =>
-              courtPlayerIds.includes(p.id)
-                ? { ...p, status: 'resting', restGamesRemaining: s.settings.minimumRestGames }
-                : p
-            ),
-          }));
-        } else {
-          // Default: Return players to waiting pool
-          set((s) => ({
-            courts: updatedCourts,
-            games: [newGameRecord, ...s.games],
-            players: s.players.map((p) =>
-              courtPlayerIds.includes(p.id) ? { ...p, status: 'waiting' } : p
-            ),
-          }));
+          updatedQueue.push(newGroup);
         }
+
+        // 4. Auto-Assign Next Group: if enabled and queue has groups, immediately start Queue #1 on this court
+        let finalCourts = updatedCourts;
+        if (state.settings.autoAssignNextGroup && updatedQueue.length > 0) {
+          const nextGroup = updatedQueue[0];
+          updatedQueue = updatedQueue.slice(1);
+
+          const gameDuration = court.durationMinutes || state.settings.defaultGameDuration;
+          finalCourts = finalCourts.map((c) =>
+            c.id === courtId
+              ? {
+                  ...c,
+                  status: 'playing' as const,
+                  playerIds: nextGroup.playerIds,
+                  teamAIds: nextGroup.teamAIds,
+                  teamBIds: nextGroup.teamBIds,
+                  balance: nextGroup.balance,
+                  startedAt: now,
+                  endsAt: now + gameDuration * 60 * 1000,
+                  durationMinutes: gameDuration,
+                }
+              : c
+          );
+
+          updatedPlayers = updatedPlayers.map((p) =>
+            nextGroup.playerIds.includes(p.id)
+              ? { ...p, status: 'playing' as const, gamesPlayed: p.gamesPlayed + 1 }
+              : p
+          );
+
+          playSound.assignCourt();
+        }
+
+        set((s) => ({
+          courts: finalCourts,
+          games: [newGameRecord, ...s.games],
+          queue: updatedQueue,
+          players: updatedPlayers,
+        }));
       },
 
       updateSettings: (newSettings: Partial<Settings>) => {

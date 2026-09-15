@@ -4,12 +4,14 @@ interface ShortcutHandlers {
   onAddPlayer?: () => void;
   onOpenHelp?: () => void;
   onEscape?: () => void;
+  onToggleWaitingPool?: () => void;
 }
 
 export function useKeyboardShortcuts({
   onAddPlayer,
   onOpenHelp,
   onEscape,
+  onToggleWaitingPool,
 }: ShortcutHandlers) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -25,6 +27,9 @@ export function useKeyboardShortcuts({
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         onAddPlayer?.();
+      } else if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        onToggleWaitingPool?.();
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         onOpenHelp?.();
@@ -35,5 +40,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onAddPlayer, onOpenHelp, onEscape]);
+  }, [onAddPlayer, onOpenHelp, onEscape, onToggleWaitingPool]);
 }

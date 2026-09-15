@@ -1,7 +1,8 @@
-import React from 'react';
-import { usePickleballStore } from '@/store/pickleball-store';
-import { useLockBodyScroll } from '@/hooks/use-lock-body-scroll';
-import { formatDuration } from '@/lib/utils';
+import React, { useState } from "react";
+import { usePickleballStore } from "@/store/pickleball-store";
+import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { formatDuration } from "@/lib/utils";
+import { ConfirmAlert } from "@/components/ui";
 
 interface EndSessionModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
   onClose,
 }) => {
   useLockBodyScroll(isOpen);
+  const [isConfirmFreshSessionOpen, setIsConfirmFreshSessionOpen] = useState(false);
+
   const {
     session,
     games,
@@ -29,13 +32,13 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
   const durationMs = (session.endedAt || Date.now()) - session.startedAt;
   const hours = Math.floor(durationMs / 3600000);
   const minutes = Math.floor((durationMs % 3600000) / 60000);
-  const durationText = `${hours > 0 ? `${hours}h ` : ''}${minutes}m`;
+  const durationText = `${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
 
   const handleExportBackup = () => {
     const json = exportBackupJson();
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `picklequeue-session-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
@@ -48,10 +51,7 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
   };
 
   const handleStartFreshSession = () => {
-    if (window.confirm('End current session and start a new fresh session?')) {
-      startNewSession();
-      onClose();
-    }
+    setIsConfirmFreshSessionOpen(true);
   };
 
   return (
@@ -62,10 +62,10 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
-              Session Summary
+              {session.venueName}
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {session.venueName} &bull; {session.sessionName}
+              {session.sessionName}
             </p>
           </div>
           <button
@@ -162,13 +162,36 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-800 dark:hover:bg-zinc-700 transition"
+              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-800 dark:hover:bg-zinc-700 transition cursor-pointer"
             >
               Close
             </button>
           </div>
         </div>
       </div>
+
+      <ConfirmAlert
+        isOpen={isConfirmFreshSessionOpen}
+        onClose={() => setIsConfirmFreshSessionOpen(false)}
+        onConfirm={() => {
+          startNewSession();
+          onClose();
+        }}
+        variant="warning"
+        title="Start Fresh Session?"
+        confirmText="Start New Session"
+        cancelText="Cancel"
+        message={
+          <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-400">
+            <p>
+              Are you sure you want to end this session? All current matches, rotations, and queues will be archived to start fresh.
+            </p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200 dark:border-amber-900/60 font-medium">
+              Tip: You can download the session backup JSON first to keep match logs for your records.
+            </p>
+          </div>
+        }
+      />
     </div>
   );
 };

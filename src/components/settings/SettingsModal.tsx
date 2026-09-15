@@ -721,44 +721,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
               {courts.map((court) => (
                 <div
                   key={court.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800"
+                  className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 gap-2.5 transition hover:border-slate-300 dark:hover:border-zinc-700"
                 >
                   {editingCourtId === court.id ? (
-                    <div className="flex items-center gap-2 flex-1 mr-2">
+                    <div className="flex flex-col gap-2 flex-1">
                       <Input
                         value={tempCourtName}
                         onChange={(e) => setTempCourtName(e.target.value)}
-                        containerClassName="flex-1"
+                        containerClassName="w-full"
                         className="!py-1 text-base sm:text-xs bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700"
                         autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSaveCourtName(court.id);
+                          } else if (e.key === "Escape") {
+                            e.preventDefault();
+                            setEditingCourtId(null);
+                          }
+                        }}
                       />
-                      <button
-                        type="button"
-                        onClick={() => handleSaveCourtName(court.id)}
-                        className="px-2.5 py-1 text-xs bg-emerald-600 text-white rounded-lg font-medium cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingCourtId(null)}
-                        className="px-2.5 py-1 text-xs bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-medium cursor-pointer"
-                      >
-                        Cancel
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCourtId(null)}
+                          className="px-2.5 py-1 text-xs bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-medium cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCourtName(court.id)}
+                          className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium cursor-pointer transition"
+                        >
+                          Save
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span
+                          className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate"
+                          title={court.name}
+                        >
                           {court.name}
                         </span>
                         <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded capitalize border ${
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded capitalize border shrink-0 ${
                             court.status === "playing"
                               ? "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/30"
                               : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
@@ -768,7 +782,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200/60 dark:border-zinc-800/60">
                         <button
                           type="button"
                           onClick={() => {

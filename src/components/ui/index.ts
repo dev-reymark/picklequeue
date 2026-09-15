@@ -13,3 +13,4 @@ export * from './Tabs';
 export * from './Chip';
 export * from './ConfirmAlert';
 export * from './Avatar';
+export * from './Drawer';

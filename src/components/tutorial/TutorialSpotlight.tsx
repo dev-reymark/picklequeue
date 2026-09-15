@@ -28,7 +28,7 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
 
     // Determine target selector for current step
     let targetSelector = '';
-    if (tutorialStep === 1) targetSelector = '#waiting-players-section';
+    if (tutorialStep === 1) targetSelector = '#waiting-pool-header-btn';
     if (tutorialStep === 2) targetSelector = '#queue-panel-section';
     if (tutorialStep === 3) targetSelector = '#courts-grid-section';
     if (tutorialStep === 4) targetSelector = '#courts-grid-section';
@@ -253,10 +253,10 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100 mb-1">
-                Add Players
+                Waiting Players Pool
               </h3>
               <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Add a player&apos;s name and skill level here. Players can be marked as Waiting, Resting, or Inactive.
+                Click here or press <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-xs">W</kbd> to open the slide-out Waiting Pool drawer. Add players, mark resting status, and form balanced matches.
               </p>
             </div>
             <div className="flex items-center justify-between pt-3">

@@ -6,15 +6,17 @@ import { Badge, Button } from "@/components/ui";
 import { Users } from "lucide-react";
 
 export const QueuePanel: React.FC = () => {
-  const { queue, players, createQueueGroup } = usePickleballStore();
+  const { queue, players, settings, createQueueGroup } = usePickleballStore();
 
   const waitingPlayers = players.filter(
     (p) => p.status === "waiting" || (p.status as any) === "available",
   );
 
+  const targetGroupSize = settings.playersPerGroup || 4;
+
   const handleAutoBalancedGroup = () => {
-    if (waitingPlayers.length < 4) return;
-    const suggested = suggestBalancedGroup(waitingPlayers, 4);
+    if (waitingPlayers.length < targetGroupSize) return;
+    const suggested = suggestBalancedGroup(waitingPlayers, targetGroupSize, settings.queueMode);
     createQueueGroup(suggested.map((p) => p.id));
   };
 
@@ -31,14 +33,16 @@ export const QueuePanel: React.FC = () => {
           </Badge>
         </div>
 
-        {waitingPlayers.length >= 4 && (
+        {waitingPlayers.length >= targetGroupSize && (
           <Button
             variant="secondary"
             size="xs"
             onClick={handleAutoBalancedGroup}
             className="text-xs"
           >
-            Auto-Balance (4)
+            {settings.queueMode === "fifo"
+              ? `Next FIFO (${targetGroupSize})`
+              : `Auto-Balance (${targetGroupSize})`}
           </Button>
         )}
       </div>

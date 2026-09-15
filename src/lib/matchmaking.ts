@@ -1,4 +1,4 @@
-import { Player, MatchBalanceResult, SKILL_RATINGS } from '@/types';
+import { Player, MatchBalanceResult, SKILL_RATINGS, QueueMode } from '@/types';
 
 /**
  * Given 2 to 4 players, determine the best Team A vs Team B split that minimizes skill gap.
@@ -136,14 +136,24 @@ function evaluateBalance(rA: number, rB: number, diff: number): MatchBalanceResu
 
 /**
  * Suggest optimal 4 players from the available waiting pool.
- * If queueMode is skill-balanced, prioritize players with close ratings.
+ * If queueMode is 'fifo', strictly prioritizes oldest waiting players.
+ * If queueMode is 'skill-balanced', finds the combination with best skill parity.
  */
-export function suggestBalancedGroup(availablePlayers: Player[], targetSize = 4): Player[] {
+export function suggestBalancedGroup(
+  availablePlayers: Player[],
+  targetSize = 4,
+  mode: QueueMode = 'skill-balanced'
+): Player[] {
   if (availablePlayers.length <= targetSize) {
     return [...availablePlayers];
   }
 
-  // Sort candidates by wait time (createdAt) first, but take the oldest 8 candidates
+  // Strict First-Come First-Served mode: take the players who have waited longest
+  if (mode === 'fifo') {
+    return availablePlayers.slice(0, targetSize);
+  }
+
+  // Skill-Balanced Mode: Sort candidates by wait time (createdAt) first, but take the oldest 10 candidates
   // and find 4 among them that form the most balanced game.
   const pool = availablePlayers.slice(0, Math.min(10, availablePlayers.length));
 

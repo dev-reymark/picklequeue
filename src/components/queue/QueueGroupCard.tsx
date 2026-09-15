@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowUp, ArrowDown, X } from 'lucide-react';
 import { QueueGroup, Player } from '@/types';
 import { usePickleballStore } from '@/store/pickleball-store';
-import { Badge, Button, Avatar } from '@/components/ui';
+import { Badge, Button, Avatar, ConfirmAlert } from '@/components/ui';
 
 interface QueueGroupCardProps {
   group: QueueGroup;
@@ -22,6 +22,8 @@ export const QueueGroupCard: React.FC<QueueGroupCardProps> = ({
     reorderQueue,
     assignGroupToCourt,
   } = usePickleballStore();
+
+  const [isDisbandAlertOpen, setIsDisbandAlertOpen] = useState(false);
 
   const teamAPlayers = group.teamAIds
     .map((id) => players.find((p) => p.id === id))
@@ -92,7 +94,7 @@ export const QueueGroupCard: React.FC<QueueGroupCardProps> = ({
           )}
           <button
             type="button"
-            onClick={() => removeQueueGroup(group.id)}
+            onClick={() => setIsDisbandAlertOpen(true)}
             title="Disband Queue Group"
             aria-label="Disband Queue Group"
             className="p-1 text-slate-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition cursor-pointer ml-0.5"
@@ -181,6 +183,41 @@ export const QueueGroupCard: React.FC<QueueGroupCardProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmAlert
+        isOpen={isDisbandAlertOpen}
+        onClose={() => setIsDisbandAlertOpen(false)}
+        onConfirm={() => removeQueueGroup(group.id)}
+        variant="warning"
+        title={`Disband Queue #${index + 1}?`}
+        confirmText="Disband Queue"
+        cancelText="Keep in Queue"
+        message={
+          <div className="space-y-2.5">
+            <p className="text-slate-600 dark:text-zinc-400">
+              Are you sure you want to disband this queued match? All players will be returned to the waiting pool.
+            </p>
+            {teamAPlayers.length + teamBPlayers.length > 0 && (
+              <div className="p-2.5 rounded-xl bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 text-xs">
+                <span className="font-semibold text-slate-700 dark:text-zinc-300 block mb-1.5">
+                  Players returning to Waiting Pool:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...teamAPlayers, ...teamBPlayers].map((p) => (
+                    <span
+                      key={p.id}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-medium text-xs shadow-2xs"
+                    >
+                      <Avatar name={p.name} id={p.id} size="xs" />
+                      <span>{p.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        }
+      />
     </div>
   );
 };

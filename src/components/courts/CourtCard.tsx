@@ -1,5 +1,5 @@
 import { playSound } from "@/lib/sound";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Court, Player } from "@/types";
 import { usePickleballStore } from "@/store/pickleball-store";
 import { GameTimer } from "./GameTimer";
@@ -24,6 +24,31 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
 
   const isPlaying = court.status === "playing";
+  const hasAutoPromptedRef = useRef(false);
+
+  // Auto-prompt end-game modal when allowOvertime is disabled and timer hits 0
+  useEffect(() => {
+    if (!isPlaying) {
+      hasAutoPromptedRef.current = false;
+      return;
+    }
+
+    if (!settings.allowOvertime && court.endsAt) {
+      const remainingMs = court.endsAt - Date.now();
+      if (remainingMs <= 0 && !hasAutoPromptedRef.current) {
+        hasAutoPromptedRef.current = true;
+        setIsEndModalOpen(true);
+      } else if (remainingMs > 0) {
+        const timer = setTimeout(() => {
+          if (!hasAutoPromptedRef.current) {
+            hasAutoPromptedRef.current = true;
+            setIsEndModalOpen(true);
+          }
+        }, remainingMs);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isPlaying, court.endsAt, settings.allowOvertime]);
 
   // Retrieve players on this court
   const courtPlayers = court.playerIds
@@ -60,7 +85,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
       cardBorderClass =
         "border-rose-300 dark:border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.12)] bg-white dark:bg-zinc-900";
       chipVariant = "rose";
-      statusText = "Overtime";
+      statusText = settings.allowOvertime ? "Overtime" : "Time's Up";
     } else if (remainingMs <= settings.warningTimeSeconds * 1000) {
       cardBorderClass =
         "border-amber-300 dark:border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.12)] bg-white dark:bg-zinc-900";
