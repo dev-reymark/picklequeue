@@ -21,7 +21,7 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
-    if (tutorialStep === null) {
+    if (tutorialStep === null || tutorialStep === 0) {
       setHighlightRect(null);
       return;
     }
@@ -33,44 +33,167 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
     if (tutorialStep === 3) targetSelector = '#courts-grid-section';
     if (tutorialStep === 4) targetSelector = '#courts-grid-section';
 
-    if (targetSelector) {
+    const updateRect = () => {
+      if (!targetSelector) return;
       const el = document.querySelector(targetSelector);
       if (el) {
         setHighlightRect(el.getBoundingClientRect());
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         setHighlightRect(null);
       }
-    } else {
-      setHighlightRect(null);
+    };
+
+    // Immediate calculation
+    updateRect();
+
+    // Scroll into view
+    const el = document.querySelector(targetSelector);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    // Continuously sync coordinates while smooth scroll settles
+    const intervalId = setInterval(updateRect, 30);
+    const stopTimer = setTimeout(() => clearInterval(intervalId), 600);
+
+    // Listen to manual scroll and window resize
+    window.addEventListener('resize', updateRect);
+    window.addEventListener('scroll', updateRect, { capture: true, passive: true });
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(stopTimer);
+      window.removeEventListener('resize', updateRect);
+      window.removeEventListener('scroll', updateRect, { capture: true });
+    };
   }, [tutorialStep]);
 
   if (tutorialStep === null) return null;
 
+  // Calculate smart position for the floating guidance card so it never blocks the spotlighted target
+  const getCardPlacement = () => {
+    if (!highlightRect || typeof window === 'undefined') {
+      return {
+        style: {} as React.CSSProperties,
+        className: 'relative mx-auto my-auto',
+      };
+    }
+
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const isMobile = windowWidth < 768;
+
+    if (isMobile) {
+      if (highlightRect.top > windowHeight / 2) {
+        return {
+          style: { top: 16, left: 16, right: 16, maxWidth: 'calc(100% - 32px)' } as React.CSSProperties,
+          className: 'fixed',
+        };
+      }
+      return {
+        style: { bottom: 16, left: 16, right: 16, maxWidth: 'calc(100% - 32px)' } as React.CSSProperties,
+        className: 'fixed',
+      };
+    }
+
+    const cardWidth = 420;
+    const cardHeight = 240;
+    const margin = 20;
+
+    const spaceOnLeft = highlightRect.left;
+    const spaceOnRight = windowWidth - (highlightRect.left + highlightRect.width);
+    const spaceAbove = highlightRect.top;
+    const spaceBelow = windowHeight - (highlightRect.top + highlightRect.height);
+
+    // If target is in the right column (e.g., Step 2 Queue panel), place to its left
+    if (spaceOnLeft >= cardWidth + margin && highlightRect.left > windowWidth * 0.45) {
+      const top = Math.max(margin, Math.min(highlightRect.top, windowHeight - cardHeight - margin));
+      const left = highlightRect.left - cardWidth - margin;
+      return {
+        style: { top, left, width: cardWidth } as React.CSSProperties,
+        className: 'fixed',
+      };
+    }
+
+    // If target is at the bottom (e.g., Step 1 Waiting Pool), place above it
+    if (spaceAbove >= cardHeight + margin && highlightRect.top > windowHeight * 0.45) {
+      const top = highlightRect.top - cardHeight - margin;
+      const left = Math.max(margin, Math.min(highlightRect.left + 24, windowWidth - cardWidth - margin));
+      return {
+        style: { top, left, width: cardWidth } as React.CSSProperties,
+        className: 'fixed',
+      };
+    }
+
+    // If target is in the left column (e.g., Step 3 & 4 Courts grid), place to its right
+    if (spaceOnRight >= cardWidth + margin) {
+      const top = Math.max(margin, Math.min(highlightRect.top + 16, windowHeight - cardHeight - margin));
+      const left = highlightRect.left + highlightRect.width + margin;
+      return {
+        style: { top, left, width: cardWidth } as React.CSSProperties,
+        className: 'fixed',
+      };
+    }
+
+    // If target is at the top with space below
+    if (spaceBelow >= cardHeight + margin) {
+      const top = highlightRect.top + highlightRect.height + margin;
+      const left = Math.max(margin, Math.min(highlightRect.left + 24, windowWidth - cardWidth - margin));
+      return {
+        style: { top, left, width: cardWidth } as React.CSSProperties,
+        className: 'fixed',
+      };
+    }
+
+    return {
+      style: {
+        top: margin,
+        right: margin,
+        width: cardWidth,
+      } as React.CSSProperties,
+      className: 'fixed',
+    };
+  };
+
+  const cardPlacement = getCardPlacement();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">
-      {/* Dark backdrop with smooth cutout highlight */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-all duration-300"
-        onClick={skipTutorial}
-      />
+      {highlightRect ? (
+        <>
+          {/* Backdrop click catcher outside the guidance card */}
+          <div
+            className="fixed inset-0 z-40 pointer-events-auto cursor-pointer"
+            onClick={skipTutorial}
+            title="Click outside to exit tutorial"
+          />
 
-      {/* Target element spotlight frame */}
-      {highlightRect && (
+          {/* True Cutout Frame: 100% transparent interior + 9999px blackout perimeter with emerald glow */}
+          <div
+            className="fixed rounded-2xl border-2 border-emerald-400 pointer-events-none transition-all duration-300 ease-out z-40"
+            style={{
+              top: Math.max(8, highlightRect.top - 8),
+              left: Math.max(8, highlightRect.left - 8),
+              width: highlightRect.width + 16,
+              height: highlightRect.height + 16,
+              boxShadow:
+                '0 0 0 9999px rgba(0, 0, 0, 0.78), 0 0 35px rgba(16, 185, 129, 0.45), inset 0 0 12px rgba(16, 185, 129, 0.15)',
+            }}
+          />
+        </>
+      ) : (
+        /* Step 0: Welcome backdrop */
         <div
-          className="fixed rounded-2xl border-2 border-emerald-400 ring-4 ring-emerald-500/30 pointer-events-none transition-all duration-300 z-50"
-          style={{
-            top: Math.max(8, highlightRect.top - 8),
-            left: Math.max(8, highlightRect.left - 8),
-            width: highlightRect.width + 16,
-            height: highlightRect.height + 16,
-          }}
+          className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-300 z-40 pointer-events-auto cursor-pointer"
+          onClick={skipTutorial}
         />
       )}
 
       {/* Floating Guidance Card */}
-      <div className="relative z-50 w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 mx-4">
+      <div
+        className={`z-50 w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4 transition-all duration-300 ease-out ${cardPlacement.className}`}
+        style={cardPlacement.style}
+      >
         {/* Step 0: Welcome */}
         {tutorialStep === 0 && (
           <>

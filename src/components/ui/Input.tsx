@@ -4,14 +4,26 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   label?: string;
   helperText?: string;
   error?: string;
+  containerClassName?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, helperText, error, className = '', id, ...props }, ref) => {
+  (
+    {
+      label,
+      helperText,
+      error,
+      className = '',
+      containerClassName = 'w-full',
+      id,
+      ...props
+    },
+    ref
+  ) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
-      <div className="w-full space-y-1">
+      <div className={`space-y-1 ${containerClassName}`}>
         {label && (
           <label
             htmlFor={inputId}
@@ -23,7 +35,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
-          className={`w-full px-3.5 py-2 bg-slate-50 dark:bg-zinc-950 border rounded-xl text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+          className={`w-full px-3.5 py-2 bg-slate-50 dark:bg-zinc-950 border rounded-xl text-base sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
             error
               ? 'border-rose-400 dark:border-rose-500/60 focus:border-rose-500'
               : 'border-slate-200 dark:border-zinc-800 focus:border-emerald-500 dark:focus:border-emerald-500'

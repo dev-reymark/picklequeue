@@ -8,6 +8,7 @@ interface GameTimerProps {
   durationMinutes?: number;
   warningSeconds?: number;
   soundEnabled?: boolean;
+  timerDirection?: 'countdown' | 'countup';
 }
 
 export function useGameTimer({
@@ -16,6 +17,7 @@ export function useGameTimer({
   durationMinutes = 15,
   warningSeconds = 120,
   soundEnabled = true,
+  timerDirection = 'countdown',
 }: GameTimerProps) {
   const [now, setNow] = useState(Date.now());
 
@@ -86,6 +88,8 @@ export function useGameTimer({
 
   const formattedTime = isOvertime
     ? formatOvertime(overtimeMs)
+    : timerDirection === 'countup'
+    ? formatDuration(Math.max(0, elapsedMs))
     : formatDuration(remainingMs);
 
   return {

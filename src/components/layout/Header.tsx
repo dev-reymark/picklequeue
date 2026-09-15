@@ -3,7 +3,8 @@ import { usePickleballStore } from '@/store/pickleball-store';
 import { SettingsModal } from '../settings/SettingsModal';
 import { EndSessionModal } from '../session/EndSessionModal';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { Settings, Volume2, VolumeX, HelpCircle } from 'lucide-react';
+import { Logo } from '../ui/Logo';
+import { Settings, Volume2, VolumeX } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -28,19 +29,14 @@ export const Header: React.FC = () => {
     updateSettings({ soundEnabled: !settings.soundEnabled });
   };
 
-  const openShortcutsTab = () => {
-    setSettingsDefaultTab('help');
-    setIsSettingsOpen(true);
-  };
-
   return (
     <>
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-950/90 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 px-4 sm:px-6 lg:px-8 py-3 transition-colors">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           {/* Logo, Venue & Session */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 inline-block" />
+            <div className="flex items-center gap-2.5">
+              <Logo className="w-7 h-7 sm:w-8 sm:h-8" />
               <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-zinc-100 tracking-wider">
                 PICKLEQUEUE
               </h1>
@@ -101,15 +97,6 @@ export const Header: React.FC = () => {
               ) : (
                 <VolumeX className="w-4 h-4" />
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={openShortcutsTab}
-              title="Keyboard Shortcuts & Help (?)"
-              className="p-2 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white hover:bg-slate-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 transition"
-            >
-              <HelpCircle className="w-4 h-4" />
             </button>
 
             <button

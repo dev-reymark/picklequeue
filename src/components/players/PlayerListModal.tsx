@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
-import { Player, SkillLevel, SKILL_CONFIG } from '@/types';
-import { usePickleballStore } from '@/store/pickleball-store';
-import { PlayerBadge } from './PlayerBadge';
+import React, { useState } from "react";
+import { Users, Search, Pencil, Trash2, Check } from "lucide-react";
+import { Player, SkillLevel, SKILL_CONFIG } from "@/types";
+import { usePickleballStore } from "@/store/pickleball-store";
+import {
+  Modal,
+  Tabs,
+  TabItem,
+  Input,
+  Select,
+  Badge,
+  Chip,
+  Button,
+  ConfirmAlert,
+} from "@/components/ui";
+import { PlayerBadge } from "./PlayerBadge";
 
 interface PlayerListModalProps {
   isOpen: boolean;
@@ -9,24 +21,96 @@ interface PlayerListModalProps {
 }
 
 const SKILL_LEVELS: SkillLevel[] = [
-  'beginner',
-  'low-intermediate',
-  'high-intermediate',
-  'advanced',
+  "beginner",
+  "low-intermediate",
+  "high-intermediate",
+  "advanced",
 ];
 
-export const PlayerListModal: React.FC<PlayerListModalProps> = ({ isOpen, onClose }) => {
-  const { players, editPlayer, deletePlayer } = usePickleballStore();
-  const [filter, setFilter] = useState<'all' | 'available' | 'queued' | 'playing'>('all');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editSkill, setEditSkill] = useState<SkillLevel>('beginner');
+type FilterType = "all" | "waiting" | "queued" | "playing" | "resting";
 
-  if (!isOpen) return null;
+export const PlayerListModal: React.FC<PlayerListModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const { players, editPlayer, deletePlayer } = usePickleballStore();
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSkill, setEditSkill] = useState<SkillLevel>("beginner");
+  const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
+
+  const waitingCount = players.filter(
+    (p) => p.status === "waiting" || (p.status as any) === "available",
+  ).length;
+  const queuedCount = players.filter((p) => p.status === "queued").length;
+  const playingCount = players.filter((p) => p.status === "playing").length;
+  const restingCount = players.filter((p) => p.status === "resting").length;
+
+  const tabItems: TabItem[] = [
+    {
+      id: "all",
+      label: "All",
+      badge: (
+        <Badge size="sm" variant={filter === "all" ? "neutral" : "outline"}>
+          {players.length}
+        </Badge>
+      ),
+    },
+    {
+      id: "waiting",
+      label: "Waiting",
+      badge: (
+        <Badge size="sm" variant={filter === "waiting" ? "emerald" : "outline"}>
+          {waitingCount}
+        </Badge>
+      ),
+    },
+    {
+      id: "queued",
+      label: "Queued",
+      badge: (
+        <Badge size="sm" variant={filter === "queued" ? "purple" : "outline"}>
+          {queuedCount}
+        </Badge>
+      ),
+    },
+    {
+      id: "playing",
+      label: "Playing",
+      badge: (
+        <Badge size="sm" variant={filter === "playing" ? "sky" : "outline"}>
+          {playingCount}
+        </Badge>
+      ),
+    },
+    {
+      id: "resting",
+      label: "Resting",
+      badge: (
+        <Badge size="sm" variant={filter === "resting" ? "amber" : "outline"}>
+          {restingCount}
+        </Badge>
+      ),
+    },
+  ];
 
   const filteredPlayers = players.filter((p) => {
-    if (filter === 'all') return true;
-    return p.status === filter;
+    // Status filter
+    if (filter === "waiting") {
+      if (p.status !== "waiting" && (p.status as any) !== "available")
+        return false;
+    } else if (filter !== "all") {
+      if (p.status !== filter) return false;
+    }
+
+    // Search query filter
+    if (searchQuery.trim()) {
+      return p.name.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    }
+
+    return true;
   });
 
   const startEdit = (p: Player) => {
@@ -42,153 +126,198 @@ export const PlayerListModal: React.FC<PlayerListModalProps> = ({ isOpen, onClos
     }
   };
 
+  const skillOptions = SKILL_LEVELS.map((lvl) => ({
+    value: lvl,
+    label: SKILL_CONFIG[lvl].label,
+  }));
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-xs p-4">
-      <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
-              Player Directory ({players.length})
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Manage player skill ratings and session participation
+    <>
+      <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Player Directory (${players.length})`}
+      description="Manage player skill ratings and session participation"
+      maxWidth="2xl"
+      fullWidthOnMobile
+      footer={
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      }
+    >
+      {/* Filter Tabs */}
+      <Tabs
+        items={tabItems}
+        activeTab={filter}
+        onChange={(id) => setFilter(id as FilterType)}
+        orientation="horizontal"
+        className="-mx-4 sm:-mx-6 px-4 sm:px-6 -mt-1 pb-2 border-b border-slate-100 dark:border-zinc-800"
+      />
+
+      {/* Search Input (shown when there are players) */}
+      {players.length > 3 && (
+        <div className="relative">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search players by name..."
+            className="pl-9 py-1.5 text-xs"
+          />
+          <Search className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none" />
+        </div>
+      )}
+
+      {/* Players List */}
+      <div className="space-y-2">
+        {filteredPlayers.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50/50 dark:bg-zinc-950/40 p-4">
+            <Users className="w-8 h-8 mx-auto text-slate-300 dark:text-zinc-600 mb-2" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+              No players found
+            </p>
+            <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-xs mx-auto">
+              {searchQuery
+                ? `No players matching "${searchQuery}" in this view.`
+                : `No players currently with status "${filter}".`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-lg px-2 font-bold"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2">
-          {(['all', 'available', 'queued', 'playing'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setFilter(tab)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition ${
-                filter === tab
-                  ? 'bg-slate-900 text-white dark:bg-zinc-800 dark:text-zinc-100 border border-slate-900 dark:border-zinc-700'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+        ) : (
+          filteredPlayers.map((player) => (
+            <div
+              key={player.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 transition-colors"
             >
-              {tab} (
-              {tab === 'all'
-                ? players.length
-                : players.filter((p) => p.status === tab).length}
-              )
-            </button>
-          ))}
-        </div>
-
-        {/* Players List Table */}
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          {filteredPlayers.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 dark:text-zinc-400 text-xs">
-              No players found for this filter.
-            </div>
-          ) : (
-            filteredPlayers.map((player) => (
-              <div
-                key={player.id}
-                className="flex items-center justify-between bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 rounded-xl p-3"
-              >
-                {editingId === player.id ? (
-                  <div className="flex-1 flex flex-wrap items-center gap-2 mr-2">
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="px-2.5 py-1 text-xs bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100 focus:outline-none"
-                    />
-                    <select
-                      value={editSkill}
-                      onChange={(e) => setEditSkill(e.target.value as SkillLevel)}
-                      className="px-2.5 py-1 text-xs bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100 focus:outline-none"
-                    >
-                      {SKILL_LEVELS.map((lvl) => (
-                        <option key={lvl} value={lvl}>
-                          {SKILL_CONFIG[lvl].label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
+              {editingId === player.id ? (
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Player name"
+                    containerClassName="flex-1 min-w-[140px]"
+                    className="py-1.5 text-xs"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                  />
+                  <Select
+                    value={editSkill}
+                    onChange={(e) => setEditSkill(e.target.value as SkillLevel)}
+                    options={skillOptions}
+                    containerClassName="w-full sm:w-44 shrink-0"
+                    className="py-1.5 text-xs"
+                  />
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 mt-1 sm:mt-0">
+                    <Button
+                      variant="primary"
+                      size="xs"
                       onClick={saveEdit}
-                      className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium"
+                      disabled={!editName.trim()}
                     >
+                      <Check className="w-3.5 h-3.5 mr-1" />
                       Save
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="xs"
                       onClick={() => setEditingId(null)}
-                      className="px-2.5 py-1 text-xs bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-300 rounded-lg font-medium"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-zinc-200">
-                        {player.name}
-                      </span>
-                      <PlayerBadge skillLevel={player.skillLevel} />
-                      <span
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize border ${
-                          player.status === 'playing'
-                            ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/30'
-                            : player.status === 'queued'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/30'
-                            : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-                        }`}
-                      >
-                        {player.status}
-                      </span>
-                      <span className="text-xs text-slate-400 dark:text-zinc-400 font-mono">
-                        {player.gamesPlayed} games played
-                      </span>
-                    </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span
+                      title={player.name}
+                      className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-[180px]"
+                    >
+                      {player.name}
+                    </span>
+                    <PlayerBadge skillLevel={player.skillLevel} />
+                    <Badge
+                      variant={
+                        player.status === "playing"
+                          ? "sky"
+                          : player.status === "queued"
+                            ? "purple"
+                            : player.status === "resting"
+                              ? "amber"
+                              : player.status === "waiting" ||
+                                  (player.status as any) === "available"
+                                ? "emerald"
+                                : "neutral"
+                      }
+                      size="sm"
+                      className="capitalize"
+                    >
+                      {player.status === "available"
+                        ? "waiting"
+                        : player.status}
+                    </Badge>
+                    <Chip
+                      variant="neutral"
+                      size="sm"
+                      className="text-[10px] font-mono"
+                    >
+                      {player.gamesPlayed}{" "}
+                      {player.gamesPlayed === 1 ? "game" : "games"}
+                    </Chip>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(player)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 transition"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deletePlayer(player.id)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-zinc-800 dark:hover:bg-rose-950/60 dark:hover:text-rose-400 dark:text-zinc-400 transition"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-zinc-800">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition"
-          >
-            Close
-          </button>
-        </div>
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => startEdit(player)}
+                      className="text-xs"
+                    >
+                      <Pencil className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setPlayerToDelete(player)}
+                      className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))
+        )}
       </div>
-    </div>
-  );
+    </Modal>
+
+    <ConfirmAlert
+      isOpen={!!playerToDelete}
+      onClose={() => setPlayerToDelete(null)}
+      onConfirm={() => {
+        if (playerToDelete) {
+          deletePlayer(playerToDelete.id);
+          setPlayerToDelete(null);
+        }
+      }}
+      title="Delete Player?"
+      message={
+        <span>
+          Are you sure you want to remove{' '}
+          <strong className="text-slate-900 dark:text-zinc-100">
+            {playerToDelete?.name}
+          </strong>{' '}
+          from the session? This will remove them from the active queue and session records.
+        </span>
+      }
+      confirmText="Delete Player"
+      variant="danger"
+    />
+  </>
+);
 };

@@ -7,3 +7,8 @@ export * from './Switch';
 export * from './Card';
 export * from './Tooltip';
 export * from './ThemeToggle';
+export * from './Checkbox';
+export * from './Logo';
+export * from './Tabs';
+export * from './Chip';
+export * from './ConfirmAlert';

@@ -70,6 +70,7 @@ const DEFAULT_SETTINGS: Settings = {
   queueMode: 'fifo',
   warningTimeSeconds: 120, // 2 minutes
   allowOvertime: true,
+  timerDirection: 'countdown',
   defaultPostGameAction: 'waiting-pool',
   autoAssignNextGroup: false,
   minimumRestGames: 1,

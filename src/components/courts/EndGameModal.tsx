@@ -77,14 +77,9 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({ court, onClose }) =>
               : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
-              Return to Waiting Pool
-            </span>
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              {selectedAction === 'waiting-pool' && '✓'}
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
+            Return to Waiting Pool
+          </span>
           <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
             Available immediately in pool for next group selection.
           </p>
@@ -99,14 +94,9 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({ court, onClose }) =>
               : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
-              Add to End of Queue
-            </span>
-            <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400">
-              {selectedAction === 'requeue' && '✓'}
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
+            Add to End of Queue
+          </span>
           <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
             Keeps this 4-player group together and queues for next court.
           </p>
@@ -121,14 +111,9 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({ court, onClose }) =>
               : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
-              Mark as Resting
-            </span>
-            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-              {selectedAction === 'resting' && '✓'}
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
+            Mark as Resting
+          </span>
           <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
             Players take a break before returning to the active waiting pool.
           </p>
@@ -143,14 +128,9 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({ court, onClose }) =>
               : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
-              Check Out / Inactive
-            </span>
-            <span className="text-[11px] font-bold text-slate-700 dark:text-zinc-300">
-              {selectedAction === 'remove' && '✓'}
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-slate-900 dark:text-zinc-200">
+            Check Out / Inactive
+          </span>
           <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
             Player has left the venue; preserves session games history.
           </p>

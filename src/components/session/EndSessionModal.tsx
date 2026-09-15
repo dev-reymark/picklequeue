@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePickleballStore } from '@/store/pickleball-store';
+import { useLockBodyScroll } from '@/hooks/use-lock-body-scroll';
 import { formatDuration } from '@/lib/utils';
 
 interface EndSessionModalProps {
@@ -11,6 +12,7 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  useLockBodyScroll(isOpen);
   const {
     session,
     games,
@@ -53,8 +55,9 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-xs p-4">
-      <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-xs p-4 overscroll-contain">
+      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
           <div>

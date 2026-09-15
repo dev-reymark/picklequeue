@@ -1,0 +1,48 @@
+import React from 'react';
+
+interface LogoProps {
+  className?: string;
+  size?: number;
+}
+
+export const Logo: React.FC<LogoProps> = ({ className = 'w-7 h-7 sm:w-8 sm:h-8' }) => {
+  return (
+    <div
+      className={`relative shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10 ${className}`}
+      title="PickleQueue"
+    >
+      <svg
+        viewBox="0 0 64 64"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full"
+      >
+        <rect width="64" height="64" rx="16" fill="#09090b" />
+        {/* Paddle Blade */}
+        <rect x="12" y="10" width="26" height="32" rx="8" fill="#10b981" />
+        {/* Paddle Rim highlight */}
+        <rect
+          x="14"
+          y="12"
+          width="22"
+          height="28"
+          rx="6"
+          stroke="#34d399"
+          strokeWidth="1.5"
+          fill="none"
+        />
+        {/* Paddle Handle */}
+        <rect x="22" y="42" width="6" height="14" rx="2" fill="#64748b" />
+        <rect x="23" y="44" width="4" height="10" rx="1" fill="#475569" />
+        {/* Pickleball */}
+        <circle cx="44" cy="24" r="12" fill="#f8fafc" stroke="#09090b" strokeWidth="2" />
+        {/* Perforations */}
+        <circle cx="40" cy="20" r="1.8" fill="#09090b" />
+        <circle cx="48" cy="20" r="1.8" fill="#09090b" />
+        <circle cx="44" cy="24" r="1.8" fill="#09090b" />
+        <circle cx="40" cy="28" r="1.8" fill="#09090b" />
+        <circle cx="48" cy="28" r="1.8" fill="#09090b" />
+      </svg>
+    </div>
+  );
+};

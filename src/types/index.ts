@@ -94,6 +94,8 @@ export type QueueMode = 'fifo' | 'skill-balanced';
 
 export type PostGameAction = 'waiting-pool' | 'requeue' | 'resting' | 'remove';
 
+export type TimerDirection = 'countdown' | 'countup';
+
 export interface Settings {
   venueName: string;
   sessionName: string;
@@ -103,6 +105,7 @@ export interface Settings {
   queueMode: QueueMode;
   warningTimeSeconds: number; // e.g. 120s for ending soon
   allowOvertime: boolean;
+  timerDirection?: TimerDirection;
   defaultPostGameAction: 'waiting-pool' | 'requeue' | 'resting';
   autoAssignNextGroup: boolean;
   minimumRestGames: number;
