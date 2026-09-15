@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PICKLEQUEUE - Documentation & Project Portal</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #18181b;
+      --card-border: #27272a;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-light: rgba(16, 185, 129, 0.12);
+      --badge-border: rgba(16, 185, 129, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    header {
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: 0.05em;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.15rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #09090b;
+      border: 1px solid var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: #27272a;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 2.5rem 0 3.5rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      border: 1px solid var(--badge-border);
+      color: var(--primary);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      margin-bottom: 4rem;
+    }
+
+    .preview-header {
+      padding: 0.85rem 1.25rem;
+      background: #121215;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .preview-dots {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .preview-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #27272a;
+    }
+
+    .preview-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .docs-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .docs-section h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .docs-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .docs-list li a {
+      display: block;
+      padding: 1.25rem;
+      background: #121215;
+      border: 1px solid var(--card-border);
+      border-radius: 0.5rem;
+      text-decoration: none;
+      color: var(--text-main);
+      transition: border-color 0.15s ease;
+    }
+
+    .docs-list li a:hover {
+      border-color: var(--primary);
+    }
+
+    .docs-list strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.9375rem;
+    }
+
+    .docs-list span {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="nav-container">
+      <a href="./" class="brand">
+        <span class="dot"></span>
+        PICKLEQUEUE
+      </a>
+      <div class="nav-links">
+        <a href="./architecture.md">Architecture</a>
+        <a href="./queue-system.md">Queue System</a>
+        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="btn btn-primary">Open Web App</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="pill">v0.3.0-beta Active Release</div>
+      <h1>Court Operations & Queue Management</h1>
+      <p class="subtitle">
+        A venue-centric web application designed for pickleball venues, open-play rotations, and tournament organizers. Built with Next.js, TypeScript, Zustand, and procedural Web Audio.
+      </p>
+      <div class="hero-actions">
+        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="btn btn-primary">
+          Launch Live App (Vercel)
+        </a>
+        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener" class="btn btn-secondary">
+          View GitHub Repository
+        </a>
+      </div>
+    </section>
+
+    <div class="preview-card">
+      <div class="preview-header">
+        <div class="preview-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <span>PICKLEQUEUE Operations Console</span>
+        <span>Dark Mode</span>
+      </div>
+      <img src="./screenshots/dashboard-dark.png" alt="PICKLEQUEUE Dashboard Overview">
+    </div>
+
+    <section class="grid">
+      <div class="feature-card">
+        <h3>Drift-Free Court Timers</h3>
+        <p>Calculates remaining and overtime from absolute system timestamps (<code>endsAt - Date.now()</code>), completely preventing timer drift when browser tabs are throttled or sleeping.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Procedural Web Audio Suite</h3>
+        <p>100% synthesized sound notifications generated via Web Audio API. Includes Minimal, Standard, and Silent sound profiles with persistent milestone alert guards.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Intelligent Matchmaking</h3>
+        <p>1-Click Auto-Balance evaluates waiting players across 4 skill tiers and computes the optimal 2v2 doubles split with match balance percentage scoring.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Queue & Post-Match Rotations</h3>
+        <p>Configurable FIFO or skill-balanced queue staging with 1-click court dispatch and flexible post-game workflows (Return to Pool, Requeue, Resting, or Check Out).</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Local Persistence & Backup</h3>
+        <p>All players, courts, queues, and settings persist automatically in <code>localStorage</code> with complete JSON backup export and restore capabilities.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Zero Emojis & Component Architecture</h3>
+        <p>Clean, professional venue layout with semantic status indicators and modular UI primitives under <code>src/components/ui/</code>.</p>
+      </div>
+    </section>
+
+    <section class="docs-section">
+      <h2>Project Documentation</h2>
+      <p class="subtitle" style="margin: 0; text-align: left;">Explore in-depth technical documentation for the queue algorithms and application architecture:</p>
+
+      <ul class="docs-list">
+        <li>
+          <a href="./architecture.md">
+            <strong>Architecture Specification</strong>
+            <span>Frontend domain structure, state management, timer math, and Web Audio synthesis.</span>
+          </a>
+        </li>
+        <li>
+          <a href="./queue-system.md">
+            <strong>Queue & Rotation Engine</strong>
+            <span>Player lifecycle state machine, 2v2 matchmaking permutations, and post-game rules.</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/dev-reymark/picklequeue/blob/main/CHANGELOG.md" target="_blank" rel="noopener">
+            <strong>Release Changelog</strong>
+            <span>Detailed release notes across v0.1.0-alpha, v0.2.0-alpha, and v0.3.0-beta.</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/dev-reymark/picklequeue/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">
+            <strong>Contribution Guidelines</strong>
+            <span>Code standards, zero-emojis rules, and local development setup instructions.</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      PICKLEQUEUE is an open-source project licensed under the <a href="https://github.com/dev-reymark/picklequeue/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
+    </p>
+  </footer>
+
+</body>
+</html>
