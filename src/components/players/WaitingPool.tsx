@@ -34,15 +34,21 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
       : players.filter((p) => p.status !== 'playing' && p.status !== 'queued');
 
   const toggleSelectPlayer = (id: string) => {
-    setSelectedPlayerIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
+    setSelectedPlayerIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((p) => p !== id);
+      }
+      if (prev.length >= targetGroupSize) {
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
 
   const targetGroupSize = settings.playersPerGroup || 4;
 
   const handleCreateGroupFromSelected = () => {
-    if (selectedPlayerIds.length < 2) return;
+    if (selectedPlayerIds.length !== targetGroupSize) return;
     playSound.groupCreated();
     createQueueGroup(selectedPlayerIds);
     setSelectedPlayerIds([]);
@@ -62,13 +68,13 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
     setSelectedPlayerIds((prev) => prev.filter((id) => id !== player.id));
   };
 
-  // Preview match balance if players checked
+  // Preview match balance only if complete group is selected
   const selectedObjects = selectedPlayerIds
     .map((id) => players.find((p) => p.id === id))
     .filter(Boolean) as Player[];
 
   const previewMatch =
-    selectedObjects.length >= 2 ? calculateBestTeams(selectedObjects) : null;
+    selectedObjects.length === targetGroupSize ? calculateBestTeams(selectedObjects) : null;
 
   const ContainerTag = inDrawer ? 'div' : Card;
 
@@ -163,7 +169,7 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/60 shadow-2xs animate-in fade-in duration-150">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                Selected: {selectedPlayerIds.length} {selectedPlayerIds.length === 1 ? 'player' : 'players'}
+                Selected: {selectedPlayerIds.length} / {targetGroupSize} ({targetGroupSize === 4 ? 'Doubles' : 'Singles'})
               </span>
               {previewMatch && (
                 <Badge
@@ -177,6 +183,11 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
                   size="sm"
                 >
                   {previewMatch.balance.statusLabel} ({previewMatch.balance.qualityPercent}%)
+                </Badge>
+              )}
+              {selectedPlayerIds.length < targetGroupSize && (
+                <Badge variant="amber" size="sm">
+                  Select {targetGroupSize - selectedPlayerIds.length} more
                 </Badge>
               )}
             </div>
@@ -193,12 +204,12 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                disabled={selectedPlayerIds.length < 2}
+                disabled={selectedPlayerIds.length !== targetGroupSize}
                 onClick={handleCreateGroupFromSelected}
                 className="flex-1 sm:flex-none text-xs"
               >
                 <Users className="w-3.5 h-3.5 mr-1 shrink-0" />
-                Create Queue Group ({selectedPlayerIds.length})
+                Create Queue Group ({selectedPlayerIds.length}/{targetGroupSize})
               </Button>
             </div>
           </div>
@@ -246,25 +257,35 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
             {displayedPlayers.map((player) => {
               const isSelected = selectedPlayerIds.includes(player.id);
               const isResting = player.status === 'resting';
+              const isGroupFull = selectedPlayerIds.length >= targetGroupSize;
+              const isSelectionDisabled = isGroupFull && !isSelected;
               return (
                 <div
                   key={player.id}
                   role="checkbox"
                   aria-checked={isSelected}
-                  tabIndex={0}
+                  tabIndex={isSelectionDisabled ? -1 : 0}
                   onKeyDown={(e) => {
+                    if (isSelectionDisabled) return;
                     if (e.key === ' ' || e.key === 'Enter') {
                       e.preventDefault();
                       toggleSelectPlayer(player.id);
                     }
                   }}
-                  onClick={() => toggleSelectPlayer(player.id)}
-                  className={`group relative cursor-pointer inline-flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl border transition-all select-none touch-manipulation min-h-[42px] sm:min-h-[38px] ${
+                  onClick={() => !isSelectionDisabled && toggleSelectPlayer(player.id)}
+                  title={
+                    isSelectionDisabled
+                      ? `Maximum group size (${targetGroupSize}) reached. Deselect a player first.`
+                      : undefined
+                  }
+                  className={`group relative inline-flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl border transition-all select-none touch-manipulation min-h-[42px] sm:min-h-[38px] ${
                     isSelected
-                      ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs text-slate-950 dark:bg-emerald-950/30 dark:border-emerald-500 dark:ring-emerald-500 dark:text-zinc-100'
+                      ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs text-slate-950 dark:bg-emerald-950/30 dark:border-emerald-500 dark:ring-emerald-500 dark:text-zinc-100 cursor-pointer'
+                      : isSelectionDisabled
+                      ? 'opacity-50 cursor-not-allowed bg-slate-50/40 border-slate-200/60 dark:bg-zinc-950/40 dark:border-zinc-800/60 text-slate-400 dark:text-zinc-500'
                       : isResting
-                      ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 hover:border-amber-300'
-                      : 'bg-slate-50/80 hover:bg-slate-100/80 border-slate-200 hover:border-slate-300 text-slate-700 dark:bg-zinc-950 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:hover:border-zinc-700 dark:text-zinc-300'
+                      ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 hover:border-amber-300 cursor-pointer'
+                      : 'bg-slate-50/80 hover:bg-slate-100/80 border-slate-200 hover:border-slate-300 text-slate-700 dark:bg-zinc-950 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:hover:border-zinc-700 dark:text-zinc-300 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">

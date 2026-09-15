@@ -35,63 +35,65 @@ export function calculateBestTeams(players: Player[]): {
     };
   }
 
-  // 3 players (odd group)
-  if (players.length === 3) {
-    const r0 = SKILL_RATINGS[players[0].skillLevel] || 1;
-    const r1 = SKILL_RATINGS[players[1].skillLevel] || 1;
-    const r2 = SKILL_RATINGS[players[2].skillLevel] || 1;
+  // Standard doubles match (4 players)
+  if (players.length === 4) {
+    const r = players.map((p) => SKILL_RATINGS[p.skillLevel] || 1);
+
+    const options = [
+      {
+        teamAIds: [players[0].id, players[1].id],
+        teamBIds: [players[2].id, players[3].id],
+        rA: r[0] + r[1],
+        rB: r[2] + r[3],
+      },
+      {
+        teamAIds: [players[0].id, players[2].id],
+        teamBIds: [players[1].id, players[3].id],
+        rA: r[0] + r[2],
+        rB: r[1] + r[3],
+      },
+      {
+        teamAIds: [players[0].id, players[3].id],
+        teamBIds: [players[1].id, players[2].id],
+        rA: r[0] + r[3],
+        rB: r[1] + r[2],
+      },
+    ];
+
+    let best = options[0];
+    let minDiff = Math.abs(options[0].rA - options[0].rB);
+
+    for (let i = 1; i < options.length; i++) {
+      const diff = Math.abs(options[i].rA - options[i].rB);
+      if (diff < minDiff) {
+        minDiff = diff;
+        best = options[i];
+      }
+    }
+
     return {
-      teamAIds: [players[0].id, players[1].id],
-      teamBIds: [players[2].id],
-      balance: evaluateBalance(r0 + r1, r2, Math.abs(r0 + r1 - r2)),
+      teamAIds: best.teamAIds,
+      teamBIds: best.teamBIds,
+      balance: evaluateBalance(best.rA, best.rB, minDiff),
     };
   }
 
-  // Standard doubles match (4 players)
-  // Pairings:
-  // Option 1: (0, 1) vs (2, 3)
-  // Option 2: (0, 2) vs (1, 3)
-  // Option 3: (0, 3) vs (1, 2)
-  const r = players.map((p) => SKILL_RATINGS[p.skillLevel] || 1);
-
-  const options = [
-    {
-      teamAIds: [players[0].id, players[1].id],
-      teamBIds: [players[2].id, players[3].id],
-      rA: r[0] + r[1],
-      rB: r[2] + r[3],
-    },
-    {
-      teamAIds: [players[0].id, players[2].id],
-      teamBIds: [players[1].id, players[3].id],
-      rA: r[0] + r[2],
-      rB: r[1] + r[3],
-    },
-    {
-      teamAIds: [players[0].id, players[3].id],
-      teamBIds: [players[1].id, players[2].id],
-      rA: r[0] + r[3],
-      rB: r[1] + r[2],
-    },
-  ];
-
-  let best = options[0];
-  let minDiff = Math.abs(options[0].rA - options[0].rB);
-
-  for (let i = 1; i < options.length; i++) {
-    const diff = Math.abs(options[i].rA - options[i].rB);
-    if (diff < minDiff) {
-      minDiff = diff;
-      best = options[i];
-    }
-  }
-
+  // Unsupported / invalid match size (e.g. 3 players, 5+ players)
+  const half = Math.ceil(players.length / 2);
   return {
-    teamAIds: best.teamAIds,
-    teamBIds: best.teamBIds,
-    balance: evaluateBalance(best.rA, best.rB, minDiff),
+    teamAIds: players.slice(0, half).map((p) => p.id),
+    teamBIds: players.slice(half).map((p) => p.id),
+    balance: {
+      teamARating: 0,
+      teamBRating: 0,
+      diff: 99,
+      status: 'unbalanced',
+      statusLabel: 'Invalid Match Size',
+      qualityPercent: 0,
+    },
   };
 }
+
 
 function evaluateBalance(rA: number, rB: number, diff: number): MatchBalanceResult {
   if (diff <= 0) {

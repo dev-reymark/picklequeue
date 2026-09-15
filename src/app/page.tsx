@@ -86,15 +86,12 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center justify-center shrink-0">
               <div className="relative flex items-center justify-center p-2 rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/70 dark:border-zinc-800/70 shadow-inner">
                 <Mascot
-                  directions="/mascots/bunny-directions.webp"
-                  reactions="/mascots/bunny-reactions.webp"
+                  directions="/mascots/cap-directions.webp"
+                  reactions="/mascots/cap-reactions.webp"
                   size={120}
                   label="PickleQueue Bunny Mascot"
                 />
               </div>
-              {/* <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 mt-1 select-none">
-                Poke me! 👆
-              </span> */}
             </div>
 
             {/* Content */}

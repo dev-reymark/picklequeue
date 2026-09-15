@@ -209,13 +209,21 @@ export const usePickleballStore = create<PickleballStoreState>()(
 
       createQueueGroup: (playerIds: string[]) => {
         const state = get();
+        const targetSize = state.settings.playersPerGroup || 4;
+
+        // Disallow invalid group sizes (must match session targetSize, or valid 2 or 4 players)
+        if (playerIds.length !== targetSize && playerIds.length !== 2 && playerIds.length !== 4) {
+          return;
+        }
+
         const groupPlayers = playerIds
           .map((id) => state.players.find((p) => p.id === id))
           .filter(Boolean) as Player[];
 
-        if (groupPlayers.length === 0) return;
+        if (groupPlayers.length !== playerIds.length) return;
 
         const match = calculateBestTeams(groupPlayers);
+        if (match.balance.statusLabel === 'Invalid Match Size') return;
 
         const newGroup: QueueGroup = {
           id: generateId(),
