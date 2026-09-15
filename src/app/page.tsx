@@ -11,6 +11,7 @@ import { AddPlayerModal } from "@/components/players/AddPlayerModal";
 import { TutorialSpotlight } from "@/components/tutorial/TutorialSpotlight";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { Logo, Drawer } from "@/components/ui";
+import { Mascot } from "page-mascot";
 
 export default function DashboardPage() {
   const { players, courts, queue, loadDemoData } = usePickleballStore();
@@ -80,24 +81,63 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Welcome banner if clean slate */}
         {isEmptyState && (
-          <div className="bg-white dark:bg-zinc-900 border border-emerald-500/40 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100 mb-1">
-                Welcome to PICKLEQUEUE
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl">
-                The session is currently empty. You can register players by opening
-                the Waiting Pool (click <span className="font-semibold text-emerald-600 dark:text-emerald-400">&ldquo;Waiting&rdquo;</span> in the header or press <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-xs">W</kbd>),
-                or instantly load a sample tournament with 6 courts and active rotations.
-              </p>
+          <div className="relative overflow-hidden bg-white dark:bg-zinc-900 border border-emerald-500/40 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-5 sm:gap-6 shadow-xs">
+            {/* Bunny Mascot */}
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <div className="relative flex items-center justify-center p-2 rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/70 dark:border-zinc-800/70 shadow-inner">
+                <Mascot
+                  directions="/mascots/bunny-directions.webp"
+                  reactions="/mascots/bunny-reactions.webp"
+                  size={120}
+                  label="PickleQueue Bunny Mascot"
+                />
+              </div>
+              {/* <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 mt-1 select-none">
+                Poke me! 👆
+              </span> */}
             </div>
-            <button
-              type="button"
-              onClick={loadDemoData}
-              className="whitespace-nowrap px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
-            >
-              Load Demo Tournament
-            </button>
+
+            {/* Content */}
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-zinc-100">
+                Welcome to PickleQueue
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl leading-relaxed">
+                The session is currently empty. You can register players by clicking{" "}
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  &ldquo;Add Player&rdquo;
+                </span>{" "}
+                (or press{" "}
+                <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-xs">
+                  N
+                </kbd>
+                ), open the Waiting Pool (press{" "}
+                <kbd className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-xs">
+                  W
+                </kbd>
+                ), or instantly load a sample tournament with 6 courts and active rotations.
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPlayerOpen(true)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  Add Player{" "}
+                  <kbd className="text-[10px] bg-emerald-700/80 px-1.5 py-0.5 rounded">
+                    N
+                  </kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={loadDemoData}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 transition cursor-pointer"
+                >
+                  Load Demo Tournament
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
