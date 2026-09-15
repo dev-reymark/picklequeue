@@ -1,413 +1,1107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PICKLEQUEUE - Documentation & Project Portal</title>
+  <title>PICKLEQUEUE — Court Operations & Rotation Engine</title>
+  
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="A venue-centric court operations and queue management web application for pickleball clubs, open-play rotations, and tournament organizers.">
+  <meta name="keywords" content="pickleball, queue management, court operations, doubles matchmaking, court timer">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              950: '#022c22',
+            },
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out forwards',
+            'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            pulseSubtle: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.6' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  
   <style>
-    :root {
-      --bg: #09090b;
-      --card-bg: #18181b;
-      --card-border: #27272a;
-      --text-main: #f4f4f5;
-      --text-muted: #a1a1aa;
-      --primary: #10b981;
-      --primary-hover: #059669;
-      --primary-light: rgba(16, 185, 129, 0.12);
-      --badge-border: rgba(16, 185, 129, 0.25);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    /* Light mode subtle pin-dot background */
     body {
-      background-color: var(--bg);
-      color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-      line-height: 1.6;
-      padding: 0;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    
+    html:not(.dark) body {
+      background-color: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 0.85px, transparent 0.85px);
+      background-size: 24px 24px;
     }
 
-    header {
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(9, 9, 11, 0.85);
-      backdrop-filter: blur(12px);
-      position: sticky;
-      top: 0;
-      z-index: 50;
+    html.dark body {
+      background-color: #09090b;
+      background-image: radial-gradient(#27272a 0.85px, transparent 0.85px);
+      background-size: 24px 24px;
     }
 
-    .nav-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .code-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      text-decoration: none;
-      color: var(--text-main);
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: 0.05em;
+    .code-scroll::-webkit-scrollbar-track {
+      background: transparent;
     }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--primary);
-      box-shadow: 0 0 12px var(--primary);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
-
-    .nav-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: color 0.15s ease;
-    }
-
-    .nav-links a:hover {
-      color: var(--text-main);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.55rem 1.15rem;
-      border-radius: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #09090b;
-      border: 1px solid var(--primary);
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      border-color: var(--primary-hover);
-    }
-
-    .btn-secondary {
-      background: var(--card-bg);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-secondary:hover {
-      background: #27272a;
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem;
-    }
-
-    .hero {
-      text-align: center;
-      padding: 2.5rem 0 3.5rem;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.85rem;
+    .code-scroll::-webkit-scrollbar-thumb {
+      background: #71717a40;
       border-radius: 9999px;
-      background: var(--primary-light);
-      border: 1px solid var(--badge-border);
-      color: var(--primary);
-      font-size: 0.8125rem;
-      font-weight: 600;
-      margin-bottom: 1.25rem;
     }
 
-    h1 {
-      font-size: 2.75rem;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-
-    .subtitle {
-      font-size: 1.125rem;
-      color: var(--text-muted);
-      max-width: 720px;
-      margin: 0 auto 2rem;
-    }
-
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .preview-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 1rem;
-      overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      margin-bottom: 4rem;
-    }
-
-    .preview-header {
-      padding: 0.85rem 1.25rem;
-      background: #121215;
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-    }
-
-    .preview-dots {
-      display: flex;
-      gap: 0.4rem;
-    }
-
-    .preview-dots span {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #27272a;
-    }
-
-    .preview-card img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 4rem;
-    }
-
-    .feature-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-    }
-
-    .feature-card h3 {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .feature-card p {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
-
-    .docs-section {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 1rem;
-      padding: 2.5rem;
-      margin-bottom: 3rem;
-    }
-
-    .docs-section h2 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-    }
-
-    .docs-list {
-      list-style: none;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 1.25rem;
-    }
-
-    .docs-list li a {
-      display: block;
-      padding: 1.25rem;
-      background: #121215;
-      border: 1px solid var(--card-border);
-      border-radius: 0.5rem;
-      text-decoration: none;
-      color: var(--text-main);
-      transition: border-color 0.15s ease;
-    }
-
-    .docs-list li a:hover {
-      border-color: var(--primary);
-    }
-
-    .docs-list strong {
-      display: block;
-      margin-bottom: 0.25rem;
-      font-size: 0.9375rem;
-    }
-
-    .docs-list span {
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-    }
-
-    footer {
-      border-top: 1px solid var(--card-border);
-      padding: 2rem 1.5rem;
-      text-align: center;
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-    }
-
-    footer a {
-      color: var(--primary);
-      text-decoration: none;
+    .tab-active {
+      border-color: #10b981 !important;
+      color: #10b981 !important;
+      background-color: rgba(16, 185, 129, 0.08) !important;
     }
   </style>
 </head>
-<body>
+<body class="font-sans text-slate-900 dark:text-zinc-100 selection:bg-emerald-500/20 selection:text-emerald-500 overflow-x-hidden min-h-screen">
 
-  <header>
-    <div class="nav-container">
-      <a href="./" class="brand">
-        <span class="dot"></span>
-        PICKLEQUEUE
+  <!-- Radial Top Glow Effect -->
+  <div class="absolute inset-x-0 top-0 mx-auto h-[600px] max-w-7xl bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.14),transparent_50%)] pointer-events-none z-0"></div>
+
+  <!-- Sticky Navigation Bar -->
+  <nav class="sticky top-0 z-50 w-full border-b border-slate-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/85 backdrop-blur-xl transition-colors">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      
+      <!-- Brand Logo -->
+      <a href="#overview" class="flex items-center gap-2.5 font-black tracking-tight text-slate-950 dark:text-white">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-950 dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 shadow-sm">
+          <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+        </span>
+        <span class="text-sm sm:text-base font-black tracking-wider uppercase">PICKLEQUEUE</span>
+        <span class="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">DOCS</span>
       </a>
-      <div class="nav-links">
-        <a href="./architecture.md">Architecture</a>
-        <a href="./queue-system.md">Queue System</a>
-        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="btn btn-primary">Open Web App</a>
+
+      <!-- Navigation Links -->
+      <div class="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600 dark:text-zinc-400">
+        <a href="#architecture" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Architecture</a>
+        <a href="#queue-system" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Queue Engine</a>
+        <a href="#audio-suite" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Audio System</a>
+        <a href="#components" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">UI Library</a>
+        <a href="#changelog" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Releases</a>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer" title="Toggle Theme (Light / Dark)">
+          <i data-lucide="moon" class="h-4 w-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="h-4 w-4 block dark:hidden"></i>
+        </button>
+
+        <!-- GitHub Repository Button -->
+        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition" title="GitHub Repository">
+          <i data-lucide="github" class="h-3.5 w-3.5"></i>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+
+        <!-- Open Web App CTA -->
+        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 text-xs font-semibold shadow-sm transition cursor-pointer">
+          <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+          <span>Launch App</span>
+        </a>
       </div>
     </div>
-  </header>
+  </nav>
 
-  <main>
-    <section class="hero">
-      <div class="pill">v0.3.0-beta Active Release</div>
-      <h1>Court Operations & Queue Management</h1>
-      <p class="subtitle">
-        A venue-centric web application designed for pickleball venues, open-play rotations, and tournament organizers. Built with Next.js, TypeScript, Zustand, and procedural Web Audio.
+  <!-- Hero Section -->
+  <section class="relative px-4 sm:px-6 pt-16 pb-12 sm:pt-20 sm:pb-16 text-center z-10">
+    <div class="mx-auto max-w-3xl animate-fade-in">
+      
+      <!-- Release Status Badge -->
+      <div class="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-6">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>v0.3.0-beta Active Release • Production Ready</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1] mb-5">
+        Court operations &amp; <br class="hidden sm:inline" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300">
+          queue rotation engine
+        </span>
+      </h1>
+
+      <p class="mx-auto max-w-2xl text-sm sm:text-base leading-relaxed text-slate-600 dark:text-zinc-400 mb-8">
+        Engineered for pickleball clubs, open-play rotations, and tournament organizers. Drift-free countdown timers, procedural venue audio alerts, 2v2 doubles matchmaking, and persistent local storage.
       </p>
-      <div class="hero-actions">
-        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="btn btn-primary">
-          Launch Live App (Vercel)
-        </a>
-        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener" class="btn btn-secondary">
-          View GitHub Repository
-        </a>
-      </div>
-    </section>
 
-    <div class="preview-card">
-      <div class="preview-header">
-        <div class="preview-dots">
-          <span></span><span></span><span></span>
-        </div>
-        <span>PICKLEQUEUE Operations Console</span>
-        <span>Dark Mode</span>
+      <!-- CTA Buttons -->
+      <div class="flex flex-wrap items-center justify-center gap-3 mb-8">
+        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-5 text-sm font-semibold shadow-md shadow-emerald-900/20 transition cursor-pointer">
+          <i data-lucide="play" class="h-4 w-4 fill-current"></i>
+          <span>Launch Live Web App</span>
+        </a>
+
+        <a href="#architecture" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 px-5 text-sm font-semibold text-slate-800 dark:text-zinc-200 shadow-sm transition cursor-pointer">
+          <i data-lucide="book-open" class="h-4 w-4"></i>
+          <span>Architecture Docs</span>
+        </a>
       </div>
-      <img src="./screenshots/dashboard-dark.png" alt="PICKLEQUEUE Dashboard Overview">
+
+      <!-- 1-Click Clone Command Box -->
+      <div class="mx-auto max-w-lg rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 p-2 shadow-sm flex items-center justify-between gap-3 text-left">
+        <div class="flex items-center gap-2 overflow-hidden px-2 text-xs font-mono text-slate-600 dark:text-zinc-400">
+          <span class="text-emerald-500 select-none">$</span>
+          <span class="truncate select-all" id="clone-text">git clone https://github.com/dev-reymark/picklequeue.git</span>
+        </div>
+        <button id="copy-clone-btn" type="button" class="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer">
+          <i data-lucide="copy" class="h-3 w-3"></i>
+          <span id="copy-label">Copy</span>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Interactive Screenshot Viewer -->
+  <section class="mx-auto max-w-5xl px-4 sm:px-6 mb-16">
+    <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-xl">
+      
+      <!-- Window Title Bar with Preview Switchers -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 bg-slate-100/70 dark:bg-zinc-950/80 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <span class="h-3 w-3 rounded-full bg-rose-500/80"></span>
+          <span class="h-3 w-3 rounded-full bg-amber-500/80"></span>
+          <span class="h-3 w-3 rounded-full bg-emerald-500/80"></span>
+          <span class="ml-2 text-xs font-mono font-semibold text-slate-500 dark:text-zinc-400">picklequeue.vercel.app</span>
+        </div>
+
+        <!-- Preview Tab Buttons -->
+        <div class="flex items-center gap-1.5 text-xs">
+          <button type="button" onclick="switchPreview('dark')" id="prev-dark" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 shadow-sm">
+            Dark Console
+          </button>
+          <button type="button" onclick="switchPreview('light')" id="prev-light" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
+            Light Mode
+          </button>
+          <button type="button" onclick="switchPreview('settings')" id="prev-settings" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
+            Settings Modal
+          </button>
+          <button type="button" onclick="switchPreview('sound')" id="prev-sound" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
+            Audio Profiles
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Image Display -->
+      <div class="relative bg-zinc-950 aspect-[16/9] sm:aspect-[16/8.5] overflow-hidden flex items-center justify-center">
+        <img id="main-preview-img" src="screenshots/dashboard-dark.png" alt="PICKLEQUEUE Dashboard Preview" class="w-full h-full object-cover object-top transition duration-300">
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Documentation System -->
+  <section class="mx-auto max-w-6xl px-4 sm:px-6 pb-24">
+    
+    <!-- Documentation Category Tabs -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-4 border-b border-slate-200 dark:border-zinc-800 mb-8 code-scroll">
+      <button type="button" onclick="showDocTab('overview')" id="tab-overview" class="tab-btn tab-active px-4 py-2 rounded-xl text-xs font-semibold border border-transparent whitespace-nowrap transition cursor-pointer">
+        Overview &amp; Features
+      </button>
+      <button type="button" onclick="showDocTab('architecture')" id="tab-architecture" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        Architecture Spec
+      </button>
+      <button type="button" onclick="showDocTab('queue')" id="tab-queue" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        Queue &amp; Matchmaking Engine
+      </button>
+      <button type="button" onclick="showDocTab('audio')" id="tab-audio" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        Audio Synthesizer &amp; Profiles
+      </button>
+      <button type="button" onclick="showDocTab('components')" id="tab-components" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        UI Components
+      </button>
+      <button type="button" onclick="showDocTab('changelog')" id="tab-changelog" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        Changelog
+      </button>
+      <button type="button" onclick="showDocTab('contributing')" id="tab-contributing" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 whitespace-nowrap transition cursor-pointer">
+        Contributing
+      </button>
     </div>
 
-    <section class="grid">
-      <div class="feature-card">
-        <h3>Drift-Free Court Timers</h3>
-        <p>Calculates remaining and overtime from absolute system timestamps (<code>endsAt - Date.now()</code>), completely preventing timer drift when browser tabs are throttled or sleeping.</p>
+    <!-- TAB 1: OVERVIEW & FEATURES -->
+    <div id="content-overview" class="doc-content space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Venue-First Operations Architecture
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          PICKLEQUEUE is architected specifically around the physical layout of sports facilities. Rather than cramming controls into a dense administrative table, the screen is balanced into 3 distinct functional zones designed for tablet visibility across the court.
+        </p>
       </div>
 
-      <div class="feature-card">
-        <h3>Procedural Web Audio Suite</h3>
-        <p>100% synthesized sound notifications generated via Web Audio API. Includes Minimal, Standard, and Silent sound profiles with persistent milestone alert guards.</p>
+      <!-- 3 Facility Layout Pillars -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
+          <div class="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+            <i data-lucide="layout-grid" class="h-5 w-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Courts Overview (70%)</h3>
+          <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Dominates the visual space with high-contrast court cards, live timers, team ratings, and quick +2m/+5m tiebreak extensions.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
+          <div class="h-10 w-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-4">
+            <i data-lucide="users" class="h-5 w-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Queue Sidebar (30%)</h3>
+          <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Organized FIFO rotation staging upcoming 4-player matches with 1-click court assignment, team balance badges, and group reordering.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
+          <div class="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+            <i data-lucide="user-plus" class="h-5 w-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Docked Waiting Pool</h3>
+          <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Bottom tray with checkboxes, quick player registration, status filters (waiting, resting, inactive), and 1-click Auto-Balance (4).
+          </p>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <h3>Intelligent Matchmaking</h3>
-        <p>1-Click Auto-Balance evaluates waiting players across 4 skill tiers and computes the optimal 2v2 doubles split with match balance percentage scoring.</p>
+      <!-- Feature Comparison Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            Drift-Free Timers
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Uses absolute epoch timestamps (<code class="text-emerald-500 font-mono">endsAt - Date.now()</code>) so timers never desync when switching browser tabs or sleeping.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-sky-500"></span>
+            Procedural Audio Suite
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            100% synthesized audio via Web Audio API. Zero external MP3 downloads required. Includes Minimal venue profile to eliminate noisy button clicks.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-purple-500"></span>
+            Intelligent 2v2 Doubles
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Evaluates 3 team permutations to minimize skill differential and computes exact match quality percentage for balanced games.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            Zero Emojis Standard
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Strict professional aesthetic. Replaces playful emojis with sleek semantic color badges and high-contrast typography.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+            Post-Match Rotation
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Conclude matches with 1 click: Return to Pool, Requeue group intact, Mark as Resting (break), or Check Out inactive.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+            JSON Session Backup
+          </h4>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Exports complete session state (players, courts, queue, settings) into JSON backups that can be restored across devices instantly.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: ARCHITECTURE SPEC (Converted from architecture.md) -->
+    <div id="content-architecture" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Technical Architecture Specification
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          Comprehensive breakdown of PICKLEQUEUE's frontend architecture, domain schema, persistent storage engine, and drift-free timer implementation.
+        </p>
       </div>
 
-      <div class="feature-card">
-        <h3>Queue & Post-Match Rotations</h3>
-        <p>Configurable FIFO or skill-balanced queue staging with 1-click court dispatch and flexible post-game workflows (Return to Pool, Requeue, Resting, or Check Out).</p>
+      <!-- Architecture Visual Flowchart Card -->
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-4">
+          System Data Flow
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+          <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4">
+            <span class="text-xs font-mono font-bold text-emerald-500 block mb-1">01. USER INTERACTION</span>
+            <strong class="text-sm text-slate-900 dark:text-white block">Next.js App Router</strong>
+            <span class="text-xs text-slate-500 dark:text-zinc-400 mt-1 block">CourtsGrid, QueuePanel, WaitingPool</span>
+          </div>
+
+          <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+            <span class="text-xs font-mono font-bold text-emerald-500 block mb-1">02. STATE MANAGEMENT</span>
+            <strong class="text-sm text-slate-900 dark:text-white block">Zustand Store</strong>
+            <span class="text-xs text-slate-500 dark:text-zinc-400 mt-1 block">persist middleware with rehydration migration</span>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4">
+            <span class="text-xs font-mono font-bold text-sky-500 block mb-1">03. STORAGE LAYER</span>
+            <strong class="text-sm text-slate-900 dark:text-white block">Browser localStorage</strong>
+            <span class="text-xs text-slate-500 dark:text-zinc-400 mt-1 block">Key: picklequeue-state (JSON exportable)</span>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4">
+            <span class="text-xs font-mono font-bold text-purple-500 block mb-1">04. AUDIO ENGINE</span>
+            <strong class="text-sm text-slate-900 dark:text-white block">Web Audio API</strong>
+            <span class="text-xs text-slate-500 dark:text-zinc-400 mt-1 block">Procedural synthesizer with milestone flags</span>
+          </div>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <h3>Local Persistence & Backup</h3>
-        <p>All players, courts, queues, and settings persist automatically in <code>localStorage</code> with complete JSON backup export and restore capabilities.</p>
+      <!-- Domain Models Table -->
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+        <div class="border-b border-slate-200 dark:border-zinc-800 px-6 py-4 bg-slate-50/50 dark:bg-zinc-950/50">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Domain Entity Models</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-100 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 font-mono">
+              <tr>
+                <th class="px-6 py-3 font-semibold">Entity</th>
+                <th class="px-6 py-3 font-semibold">Key Properties</th>
+                <th class="px-6 py-3 font-semibold">Operational Purpose</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/80 font-sans">
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
+                <td class="px-6 py-3.5 font-bold font-mono text-emerald-600 dark:text-emerald-400">Player</td>
+                <td class="px-6 py-3.5 font-mono text-xs text-slate-600 dark:text-zinc-400">id, name, skillLevel, rating, status, gamesPlayed</td>
+                <td class="px-6 py-3.5 text-slate-700 dark:text-zinc-300">Tracks check-in roster, skill tier, and availability state.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
+                <td class="px-6 py-3.5 font-bold font-mono text-emerald-600 dark:text-emerald-400">Court</td>
+                <td class="px-6 py-3.5 font-mono text-xs text-slate-600 dark:text-zinc-400">id, name, status, currentMatch, timer</td>
+                <td class="px-6 py-3.5 text-slate-700 dark:text-zinc-300">Manages court allocation, elapsed/remaining time, and overtime.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
+                <td class="px-6 py-3.5 font-bold font-mono text-emerald-600 dark:text-emerald-400">QueueGroup</td>
+                <td class="px-6 py-3.5 font-mono text-xs text-slate-600 dark:text-zinc-400">id, players, teamA, teamB, matchQuality, createdAt</td>
+                <td class="px-6 py-3.5 text-slate-700 dark:text-zinc-300">Stages balanced 4-player matches for instant court dispatch.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
+                <td class="px-6 py-3.5 font-bold font-mono text-emerald-600 dark:text-emerald-400">GameRecord</td>
+                <td class="px-6 py-3.5 font-mono text-xs text-slate-600 dark:text-zinc-400">id, courtId, players, startedAt, endedAt, duration</td>
+                <td class="px-6 py-3.5 text-slate-700 dark:text-zinc-300">Historical archive of completed matches and analytics.</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
+                <td class="px-6 py-3.5 font-bold font-mono text-emerald-600 dark:text-emerald-400">Settings</td>
+                <td class="px-6 py-3.5 font-mono text-xs text-slate-600 dark:text-zinc-400">venueName, courtCount, soundProfile, volume</td>
+                <td class="px-6 py-3.5 text-slate-700 dark:text-zinc-300">Venue rules, audio profile switches, and custom court names.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <h3>Zero Emojis & Component Architecture</h3>
-        <p>Clean, professional venue layout with semantic status indicators and modular UI primitives under <code>src/components/ui/</code>.</p>
+      <!-- Drift-Free Countdown Engine Code Card -->
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">
+          Drift-Free Countdown Engine Implementation
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 mb-4 leading-relaxed">
+          Standard <code class="text-emerald-500 font-mono">setInterval(() => count--, 1000)</code> timers lose seconds over time because modern mobile and laptop browsers throttle background tabs. PICKLEQUEUE calculates countdown time using absolute timestamp math:
+        </p>
+
+        <div class="rounded-xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto code-scroll border border-zinc-800">
+<pre>// 1. On Match Start (Saved to Court State):
+const startedAt = Date.now();
+const endsAt = startedAt + (durationMinutes * 60 * 1000);
+
+// 2. Real-Time Tick (Hook: useGameTimer):
+const now = Date.now();
+const remainingSeconds = Math.max(0, Math.floor((endsAt - now) / 1000));
+const isOvertime = now > endsAt;
+const overtimeSeconds = isOvertime ? Math.floor((now - endsAt) / 1000) : 0;
+
+// 3. Milestone Alert Flags (Stored in persistent useRef):
+if (remainingSeconds <= 120 && !alertsRef.current.warning2m) {
+  alertsRef.current.warning2m = true;
+  playSound('warning-2m'); // Triggers strictly once
+}
+if (remainingSeconds === 0 && !alertsRef.current.timeUp) {
+  alertsRef.current.timeUp = true;
+  playSound('time-up');   // Game finish buzzer
+}</pre>
+        </div>
       </div>
-    </section>
+    </div>
 
-    <section class="docs-section">
-      <h2>Project Documentation</h2>
-      <p class="subtitle" style="margin: 0; text-align: left;">Explore in-depth technical documentation for the queue algorithms and application architecture:</p>
+    <!-- TAB 3: QUEUE & MATCHMAKING ENGINE (Converted from queue-system.md) -->
+    <div id="content-queue" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Queue Mechanics &amp; Matchmaking Engine
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          Detailed documentation on player state transitions, fairness algorithms, the 2v2 doubles permutation balancing math, and post-game rotation rules.
+        </p>
+      </div>
 
-      <ul class="docs-list">
-        <li>
-          <a href="./architecture.md">
-            <strong>Architecture Specification</strong>
-            <span>Frontend domain structure, state management, timer math, and Web Audio synthesis.</span>
-          </a>
-        </li>
-        <li>
-          <a href="./queue-system.md">
-            <strong>Queue & Rotation Engine</strong>
-            <span>Player lifecycle state machine, 2v2 matchmaking permutations, and post-game rules.</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/dev-reymark/picklequeue/blob/main/CHANGELOG.md" target="_blank" rel="noopener">
-            <strong>Release Changelog</strong>
-            <span>Detailed release notes across v0.1.0-alpha, v0.2.0-alpha, and v0.3.0-beta.</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/dev-reymark/picklequeue/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">
-            <strong>Contribution Guidelines</strong>
-            <span>Code standards, zero-emojis rules, and local development setup instructions.</span>
-          </a>
-        </li>
-      </ul>
-    </section>
-  </main>
+      <!-- Interactive 2v2 Match Balance Calculator Simulator -->
+      <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Live 2v2 Team Balance Simulator</h3>
+            <p class="text-xs text-slate-600 dark:text-zinc-400">Adjust the 4 player ratings below to see the algorithm find the optimal team split.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold border border-emerald-500/30">
+            Interactive
+          </span>
+        </div>
 
-  <footer>
-    <p>
-      PICKLEQUEUE is an open-source project licensed under the <a href="https://github.com/dev-reymark/picklequeue/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
-    </p>
+        <!-- Rating Inputs -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div class="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+            <span class="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">Player 1</span>
+            <input type="range" id="p1-rate" min="1.0" max="5.0" step="0.25" value="3.5" oninput="recalcBalance()" class="w-full accent-emerald-500 cursor-pointer">
+            <span id="p1-val" class="font-mono text-xs font-bold text-emerald-500 block mt-1">3.50</span>
+          </div>
+
+          <div class="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+            <span class="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">Player 2</span>
+            <input type="range" id="p2-rate" min="1.0" max="5.0" step="0.25" value="4.25" oninput="recalcBalance()" class="w-full accent-emerald-500 cursor-pointer">
+            <span id="p2-val" class="font-mono text-xs font-bold text-emerald-500 block mt-1">4.25</span>
+          </div>
+
+          <div class="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+            <span class="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">Player 3</span>
+            <input type="range" id="p3-rate" min="1.0" max="5.0" step="0.25" value="2.5" oninput="recalcBalance()" class="w-full accent-emerald-500 cursor-pointer">
+            <span id="p3-val" class="font-mono text-xs font-bold text-emerald-500 block mt-1">2.50</span>
+          </div>
+
+          <div class="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+            <span class="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">Player 4</span>
+            <input type="range" id="p4-rate" min="1.0" max="5.0" step="0.25" value="3.25" oninput="recalcBalance()" class="w-full accent-emerald-500 cursor-pointer">
+            <span id="p4-val" class="font-mono text-xs font-bold text-emerald-500 block mt-1">3.25</span>
+          </div>
+        </div>
+
+        <!-- Computed Result Box -->
+        <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/40 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block mb-0.5">Optimal Matchup</span>
+            <span id="sim-matchup" class="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-mono">Team A [P1 + P2] vs Team B [P3 + P4]</span>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <span class="text-xs text-slate-500 dark:text-zinc-400 block">Differential</span>
+              <span id="sim-diff" class="font-mono font-bold text-slate-900 dark:text-white text-sm">0.25</span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-500 dark:text-zinc-400 block">Match Quality</span>
+              <span id="sim-quality" class="font-mono font-bold text-emerald-500 text-base">94% Balanced</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player Lifecycle State Machine -->
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Player Lifecycle Transitions</h3>
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 mb-6">Every player in PICKLEQUEUE moves through five strictly defined operational states:</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 text-center">
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mx-auto block mb-2"></span>
+            <strong class="text-xs font-bold text-slate-900 dark:text-white block">WAITING</strong>
+            <span class="text-[11px] text-slate-500 dark:text-zinc-400">Available for queue grouping &amp; matchmaking</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 mx-auto block mb-2"></span>
+            <strong class="text-xs font-bold text-slate-900 dark:text-white block">QUEUED</strong>
+            <span class="text-[11px] text-slate-500 dark:text-zinc-400">Staged on an upcoming queue card</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mx-auto block mb-2"></span>
+            <strong class="text-xs font-bold text-slate-900 dark:text-white block">PLAYING</strong>
+            <span class="text-[11px] text-slate-500 dark:text-zinc-400">Active on a court with running timer</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mx-auto block mb-2"></span>
+            <strong class="text-xs font-bold text-slate-900 dark:text-white block">RESTING</strong>
+            <span class="text-[11px] text-slate-500 dark:text-zinc-400">Taking a break; excluded from auto-balance</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+            <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 mx-auto block mb-2"></span>
+            <strong class="text-xs font-bold text-slate-900 dark:text-white block">INACTIVE</strong>
+            <span class="text-[11px] text-slate-500 dark:text-zinc-400">Checked out while preserving session log</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PROCEDURAL AUDIO SUITE (Interactive Web Audio Synthesizer) -->
+    <div id="content-audio" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Procedural Web Audio Suite &amp; Profiles
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          PICKLEQUEUE incorporates a zero-dependency Web Audio API oscillator synthesizer. Click the interactive audition buttons below to hear the exact procedural sounds generated in real-time.
+        </p>
+      </div>
+
+      <!-- Live Interactive Sound Audition Console -->
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">Live Sound Synthesizer Audition</h3>
+        <p class="text-xs text-slate-500 dark:text-zinc-400 mb-6">Generated programmatically using native browser oscillators with exponential gain decay.</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button type="button" onclick="playAudioDemo('click')" class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-left hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-slate-900 dark:text-white block">UI Micro-Click</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">800Hz pop (25ms)</span>
+            </div>
+            <i data-lucide="volume-2" class="h-4 w-4 text-emerald-500"></i>
+          </button>
+
+          <button type="button" onclick="playAudioDemo('player-added')" class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-left hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-slate-900 dark:text-white block">Player Added</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">520Hz &rarr; 680Hz ascending confirm</span>
+            </div>
+            <i data-lucide="volume-2" class="h-4 w-4 text-emerald-500"></i>
+          </button>
+
+          <button type="button" onclick="playAudioDemo('court-assigned')" class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-left hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-slate-900 dark:text-white block">Court Assigned</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">440Hz &rarr; 660Hz chord</span>
+            </div>
+            <i data-lucide="volume-2" class="h-4 w-4 text-emerald-500"></i>
+          </button>
+
+          <button type="button" onclick="playAudioDemo('warning-2m')" class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 text-left hover:border-amber-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-amber-600 dark:text-amber-400 block">2-Minute Warning</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">780Hz &rarr; 520Hz soft chime</span>
+            </div>
+            <i data-lucide="bell" class="h-4 w-4 text-amber-500"></i>
+          </button>
+
+          <button type="button" onclick="playAudioDemo('warning-30s')" class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 text-left hover:border-amber-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-amber-600 dark:text-amber-400 block">30-Second Warning</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">880Hz double beep</span>
+            </div>
+            <i data-lucide="bell-ring" class="h-4 w-4 text-amber-500"></i>
+          </button>
+
+          <button type="button" onclick="playAudioDemo('time-up')" class="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5 text-left hover:border-rose-500 transition cursor-pointer flex items-center justify-between">
+            <div>
+              <strong class="text-xs font-bold text-rose-600 dark:text-rose-400 block">Game Over Buzzer</strong>
+              <span class="text-[11px] text-slate-500 dark:text-zinc-400">220Hz resonant buzzer</span>
+            </div>
+            <i data-lucide="alert-triangle" class="h-4 w-4 text-rose-500"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sound Profiles Comparison -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="rounded-xl border border-emerald-500/40 bg-white dark:bg-zinc-900 p-5 ring-1 ring-emerald-500/30">
+          <div class="flex items-center justify-between mb-2">
+            <strong class="text-sm font-bold text-slate-900 dark:text-white">Minimal Profile</strong>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 uppercase">Default</span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 mb-3">Venue Recommended: Timers and court assignments only. Mutes noisy UI button clicks.</p>
+          <ul class="text-xs text-slate-500 dark:text-zinc-400 space-y-1">
+            <li>&bull; 2m Warning: Enabled</li>
+            <li>&bull; Game Buzzer: Enabled</li>
+            <li>&bull; UI Clicks: Muted</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <strong class="text-sm font-bold text-slate-900 dark:text-white block mb-2">Standard Profile</strong>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 mb-3">Full audio feedback: UI clicks, queue events, and timer milestones.</p>
+          <ul class="text-xs text-slate-500 dark:text-zinc-400 space-y-1">
+            <li>&bull; 2m Warning: Enabled</li>
+            <li>&bull; Game Buzzer: Enabled</li>
+            <li>&bull; UI Clicks: Enabled</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <strong class="text-sm font-bold text-slate-900 dark:text-white block mb-2">Silent Profile</strong>
+          <p class="text-xs text-slate-600 dark:text-zinc-400 mb-3">Completely quiet. All audio output and chimes are disabled.</p>
+          <ul class="text-xs text-slate-500 dark:text-zinc-400 space-y-1">
+            <li>&bull; 2m Warning: Muted</li>
+            <li>&bull; Game Buzzer: Muted</li>
+            <li>&bull; UI Clicks: Muted</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: UI COMPONENTS -->
+    <div id="content-components" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Component-Driven UI System
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          Standardized, type-safe primitive components located under <code class="text-emerald-500 font-mono">src/components/ui/</code> ensuring visual harmony across light and dark themes.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Button Component Card -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1 font-mono">Button.tsx</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Variants: primary, secondary, outline, ghost, danger, amber</p>
+          <div class="flex flex-wrap gap-2">
+            <button class="px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold">Primary</button>
+            <button class="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 text-xs font-semibold">Secondary</button>
+            <button class="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700 text-xs font-semibold">Outline</button>
+            <button class="px-3.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold">Danger</button>
+            <button class="px-3.5 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold">Amber</button>
+          </div>
+        </div>
+
+        <!-- Badge Component Card -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1 font-mono">Badge.tsx</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Semantic indicators with indicator dots</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Available
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border border-sky-500/20">
+              <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span> In Play
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+              <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Ending Soon
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+              <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span> Overtime
+            </span>
+          </div>
+        </div>
+
+        <!-- Input & Select Card -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1 font-mono">Input.tsx &amp; Select.tsx</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Accessible form fields with emerald focus rings</p>
+          <div class="space-y-3">
+            <input type="text" placeholder="e.g. Center Court" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <select class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100">
+              <option>First-Come, First-Served (FIFO)</option>
+              <option>Skill-Balanced Rotation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Switch Component Card -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1 font-mono">Switch.tsx</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Accessible toggle switches for system settings</p>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-700 dark:text-zinc-300">Master Sound</span>
+              <div class="w-10 h-5 bg-emerald-500 rounded-full flex items-center justify-end px-1 cursor-pointer">
+                <div class="w-3.5 h-3.5 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-700 dark:text-zinc-300">Allow Overtime</span>
+              <div class="w-10 h-5 bg-emerald-500 rounded-full flex items-center justify-end px-1 cursor-pointer">
+                <div class="w-3.5 h-3.5 bg-white rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: CHANGELOG (Converted from CHANGELOG.md) -->
+    <div id="content-changelog" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Release History
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          Chronological changelog tracking all major architectural features, sound systems, and improvements.
+        </p>
+      </div>
+
+      <div class="space-y-6">
+        <!-- v0.3.0-beta -->
+        <div class="rounded-2xl border border-emerald-500/30 bg-white dark:bg-zinc-900 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white">v0.3.0-beta</span>
+              <span class="text-xs text-slate-500 dark:text-zinc-400">September 15, 2026</span>
+            </div>
+            <span class="text-xs font-semibold text-emerald-500">Current Release</span>
+          </div>
+          <ul class="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 space-y-2 list-disc list-inside">
+            <li><strong>Procedural Web Audio Suite:</strong> Pure oscillator synthesis for clicks, confirmations, warnings, and buzzers.</li>
+            <li><strong>Sound Profiles:</strong> Minimal (venue default), Standard, and Silent modes.</li>
+            <li><strong>Milestone Alert Guards:</strong> Persistent <code class="text-emerald-500 font-mono">useRef</code> flags preventing repeated audio during overtime.</li>
+            <li><strong>Light Mode Pin-Dot Grid:</strong> Refined 1px dot-matrix styling for crisp daytime visibility.</li>
+            <li><strong>GitHub Documentation Portal:</strong> Complete interactive documentation suite and CI workflow.</li>
+          </ul>
+        </div>
+
+        <!-- v0.2.0-alpha -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">v0.2.0-alpha</span>
+              <span class="text-xs text-slate-500 dark:text-zinc-400">September 15, 2026</span>
+            </div>
+          </div>
+          <ul class="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 space-y-2 list-disc list-inside">
+            <li><strong>Multi-Tab Settings Console:</strong> General rules, game duration, queue mode, and custom court naming.</li>
+            <li><strong>Post-Match Rotation Modal:</strong> Return to Pool, Requeue group intact, Resting, or Check Out.</li>
+            <li><strong>Session Backup &amp; Restore:</strong> Complete JSON export and import capabilities.</li>
+            <li><strong>First-Run Spotlight Tutorial:</strong> 5-step interactive onboarding tour.</li>
+          </ul>
+        </div>
+
+        <!-- v0.1.0-alpha -->
+        <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">v0.1.0-alpha</span>
+              <span class="text-xs text-slate-500 dark:text-zinc-400">September 15, 2026</span>
+            </div>
+          </div>
+          <ul class="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 space-y-2 list-disc list-inside">
+            <li><strong>Core Operations Engine:</strong> Real-time court cards, drift-free timers, and team slots.</li>
+            <li><strong>Waiting Pool &amp; FIFO Queue:</strong> 1-Click Auto-Balance 4 and queue staging.</li>
+            <li><strong>Light / Dark Themes:</strong> Seamless switching powered by <code class="text-emerald-500 font-mono">next-themes</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: CONTRIBUTING (Converted from CONTRIBUTING.md) -->
+    <div id="content-contributing" class="doc-content hidden space-y-10">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          Contributing Guidelines
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+          Standards and guidelines for developing and contributing to PICKLEQUEUE.
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-6">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Core Engineering Rules</h3>
+          <ul class="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 space-y-2 list-disc list-inside">
+            <li><strong>Strictly Zero Emojis:</strong> Never use emojis in UI components, badges, or feedback messages. Use semantic color dots or clean Lucide icons.</li>
+            <li><strong>Drift-Free Timers:</strong> Always calculate remaining time from <code class="text-emerald-500 font-mono">endsAt - Date.now()</code>. Never rely on accumulated intervals.</li>
+            <li><strong>Component-Driven UI:</strong> Add shared primitives under <code class="text-emerald-500 font-mono">src/components/ui/</code> and reuse them consistently.</li>
+            <li><strong>High-Contrast Readability:</strong> Timers and team slots must remain clearly legible from several meters away on court tablets.</li>
+          </ul>
+        </div>
+
+        <div class="border-t border-slate-200 dark:border-zinc-800 pt-6">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">Local Development Setup</h3>
+          <div class="rounded-xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto code-scroll border border-zinc-800">
+<pre># 1. Clone repository
+git clone https://github.com/dev-reymark/picklequeue.git
+cd picklequeue
+
+# 2. Install dependencies
+npm install
+
+# 3. Start local development server
+npm run dev
+
+# 4. Verify type checks and production build
+npx tsc --noEmit
+npm run build</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 py-10 transition-colors">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-zinc-400">
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+        <span class="font-bold text-slate-800 dark:text-zinc-200">PICKLEQUEUE</span>
+        <span>&bull;</span>
+        <span>MIT Licensed Open Source Project</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener" class="hover:text-emerald-500 transition">GitHub</a>
+        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="hover:text-emerald-500 transition">Live App</a>
+        <a href="#overview" class="hover:text-emerald-500 transition">Back to Top &uarr;</a>
+      </div>
+    </div>
   </footer>
 
+  <!-- Scripts: Theme Toggle, Tabs, Simulator & Web Audio -->
+  <script>
+    // 1. Initialize Lucide Icons
+    lucide.createIcons();
+
+    // 2. Dark / Light Theme Logic
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const storedTheme = localStorage.getItem('picklequeue_docs_theme');
+
+    if (storedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('picklequeue_docs_theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('picklequeue_docs_theme', 'dark');
+      }
+      lucide.createIcons();
+    });
+
+    // 3. Tab Switching Logic
+    function showDocTab(tabName) {
+      document.querySelectorAll('.doc-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('tab-active');
+        el.classList.add('text-slate-600', 'dark:text-zinc-400');
+      });
+
+      const activeContent = document.getElementById('content-' + tabName);
+      const activeBtn = document.getElementById('tab-' + tabName);
+
+      if (activeContent) activeContent.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.add('tab-active');
+        activeBtn.classList.remove('text-slate-600', 'dark:text-zinc-400');
+      }
+      lucide.createIcons();
+    }
+
+    // 4. Screenshot Switcher
+    function switchPreview(mode) {
+      const img = document.getElementById('main-preview-img');
+      const buttons = ['dark', 'light', 'settings', 'sound'];
+      
+      buttons.forEach(b => {
+        const btn = document.getElementById('prev-' + b);
+        if (b === mode) {
+          btn.className = 'px-3 py-1 rounded-lg font-medium transition cursor-pointer bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 shadow-sm';
+        } else {
+          btn.className = 'px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200';
+        }
+      });
+
+      if (mode === 'dark') img.src = 'screenshots/dashboard-dark.png';
+      if (mode === 'light') img.src = 'screenshots/dashboard-light.png';
+      if (mode === 'settings') img.src = 'screenshots/settings-courts.png';
+      if (mode === 'sound') img.src = 'screenshots/sound-notifications.png';
+    }
+
+    // 5. Clone Command 1-Click Copy
+    const copyCloneBtn = document.getElementById('copy-clone-btn');
+    const copyLabel = document.getElementById('copy-label');
+    copyCloneBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText('git clone https://github.com/dev-reymark/picklequeue.git');
+      copyLabel.textContent = 'Copied!';
+      setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+    });
+
+    // 6. 2v2 Matchmaking Balance Simulator
+    function recalcBalance() {
+      const p1 = parseFloat(document.getElementById('p1-rate').value);
+      const p2 = parseFloat(document.getElementById('p2-rate').value);
+      const p3 = parseFloat(document.getElementById('p3-rate').value);
+      const p4 = parseFloat(document.getElementById('p4-rate').value);
+
+      document.getElementById('p1-val').textContent = p1.toFixed(2);
+      document.getElementById('p2-val').textContent = p2.toFixed(2);
+      document.getElementById('p3-val').textContent = p3.toFixed(2);
+      document.getElementById('p4-val').textContent = p4.toFixed(2);
+
+      const permutations = [
+        { desc: 'Team A [P1 + P2] vs Team B [P3 + P4]', diff: Math.abs((p1 + p2) - (p3 + p4)) },
+        { desc: 'Team A [P1 + P3] vs Team B [P2 + P4]', diff: Math.abs((p1 + p3) - (p2 + p4)) },
+        { desc: 'Team A [P1 + P4] vs Team B [P2 + P3]', diff: Math.abs((p1 + p4) - (p2 + p3)) }
+      ];
+
+      permutations.sort((a, b) => a.diff - b.diff);
+      const best = permutations[0];
+      const quality = Math.max(0, Math.round(100 - (best.diff * 25)));
+
+      document.getElementById('sim-matchup').textContent = best.desc;
+      document.getElementById('sim-diff').textContent = best.diff.toFixed(2);
+      document.getElementById('sim-quality').textContent = quality + '% Balanced';
+    }
+
+    // 7. Web Audio Synthesizer Demo
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playAudioDemo(type) {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+
+      if (type === 'click') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.03);
+      } else if (type === 'player-added') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(680, now + 0.12);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'court-assigned') {
+        [440, 660, 880].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + (idx * 0.06);
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.1, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.18);
+        });
+      } else if (type === 'warning-2m') {
+        [780, 520].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + (idx * 0.18);
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.15, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.35);
+        });
+      } else if (type === 'warning-30s') {
+        [0, 0.14].forEach((delay) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + delay;
+          osc.frequency.setValueAtTime(880, start);
+          gain.gain.setValueAtTime(0.15, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.07);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.07);
+        });
+      } else if (type === 'time-up') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      }
+    }
+  </script>
 </body>
 </html>
