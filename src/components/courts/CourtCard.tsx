@@ -3,9 +3,8 @@ import React, { useState } from "react";
 import { Court, Player } from "@/types";
 import { usePickleballStore } from "@/store/pickleball-store";
 import { GameTimer } from "./GameTimer";
-import { PlayerBadge } from "../players/PlayerBadge";
 import { EndGameModal } from "./EndGameModal";
-import { Chip, Badge, Button, Select } from "@/components/ui";
+import { Chip, Badge, Button, Select, Avatar } from "@/components/ui";
 
 interface CourtCardProps {
   court: Court;
@@ -140,53 +139,61 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
               />
 
               {/* Matchup: Team A vs Team B */}
-              <div className="bg-slate-50 dark:bg-zinc-950/60 rounded-lg p-3 border border-slate-200 dark:border-zinc-800/80">
+              <div className="bg-slate-50/80 dark:bg-zinc-950/70 rounded-xl p-3 border border-slate-200 dark:border-zinc-800/80">
                 <div className="grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-zinc-800">
                   {/* Team A */}
-                  <div className="pr-1">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                      <span>Team A</span>
+                  <div className="pr-2 min-w-0">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
+                      <span className="uppercase tracking-wider">Team A</span>
                       {court.balance && (
-                        <span className="text-slate-600 dark:text-zinc-400 font-mono">
-                          Rating: {court.balance.teamARating}
+                        <span
+                          title={`Team A Rating: ${court.balance.teamARating}`}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
+                        >
+                          {court.balance.teamARating}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {displayTeamA.map((p) => (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between text-xs text-slate-800 dark:text-zinc-200"
+                          title={`${p.name} (${p.skillLevel})`}
+                          className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
                         >
-                          <span className="truncate pr-1 font-medium">
+                          <Avatar name={p.name} id={p.id} size="xs" />
+                          <span className="truncate flex-1">
                             {p.name}
                           </span>
-                          <PlayerBadge skillLevel={p.skillLevel} compact />
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Team B */}
-                  <div className="pl-3">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                      <span>Team B</span>
+                  <div className="pl-3 min-w-0">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
+                      <span className="uppercase tracking-wider">Team B</span>
                       {court.balance && (
-                        <span className="text-slate-600 dark:text-zinc-400 font-mono">
-                          Rating: {court.balance.teamBRating}
+                        <span
+                          title={`Team B Rating: ${court.balance.teamBRating}`}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
+                        >
+                          {court.balance.teamBRating}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {displayTeamB.map((p) => (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between text-xs text-slate-800 dark:text-zinc-200"
+                          title={`${p.name} (${p.skillLevel})`}
+                          className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
                         >
-                          <span className="truncate pr-1 font-medium">
+                          <Avatar name={p.name} id={p.id} size="xs" />
+                          <span className="truncate flex-1">
                             {p.name}
                           </span>
-                          <PlayerBadge skillLevel={p.skillLevel} compact />
                         </div>
                       ))}
                     </div>

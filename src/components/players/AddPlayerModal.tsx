@@ -2,7 +2,7 @@ import { playSound } from "@/lib/sound";
 import React, { useState } from "react";
 import { SkillLevel, SKILL_CONFIG } from "@/types";
 import { usePickleballStore } from "@/store/pickleball-store";
-import { Modal, Input, Button, Checkbox } from "@/components/ui";
+import { Modal, Input, Button, Checkbox, Avatar } from "@/components/ui";
 
 interface AddPlayerModalProps {
   isOpen: boolean;
@@ -65,6 +65,19 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Live Avatar Preview */}
+        <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-zinc-950/80 rounded-xl border border-slate-200 dark:border-zinc-800">
+          <Avatar name={name || "Player"} size="lg" />
+          <div className="min-w-0">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">
+              {name.trim() || "Player Name"}
+            </h4>
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              Offline 3D Memoji Avatar (Deterministic)
+            </p>
+          </div>
+        </div>
+
         {/* Player Name */}
         <Input
           label="Player Name"

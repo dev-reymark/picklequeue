@@ -103,7 +103,6 @@ export const Header: React.FC = () => {
               type="button"
               onClick={loadDemoData}
               className="hidden sm:inline-block px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-800 transition"
-              title="Load realistic sample tournament with players, matches and queue"
             >
               Demo
             </button>

@@ -4,7 +4,7 @@ import { Player, PlayerStatus } from '@/types';
 import { usePickleballStore } from '@/store/pickleball-store';
 import { playSound } from '@/lib/sound';
 import { calculateBestTeams, suggestBalancedGroup } from '@/lib/matchmaking';
-import { Card, Badge, Button, Checkbox } from '@/components/ui';
+import { Card, Badge, Button, Checkbox, Avatar } from '@/components/ui';
 import { PlayerBadge } from './PlayerBadge';
 import { AddPlayerModal } from './AddPlayerModal';
 
@@ -265,6 +265,7 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({ onOpenPlayerList }) =>
                       tabIndex={-1}
                       className="pointer-events-none"
                     />
+                    <Avatar name={player.name} id={player.id} size="xs" />
                     <span
                       title={player.name}
                       className="text-xs font-semibold truncate max-w-[110px] sm:max-w-[150px]"

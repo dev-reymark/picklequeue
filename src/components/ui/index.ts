@@ -12,3 +12,4 @@ export * from './Logo';
 export * from './Tabs';
 export * from './Chip';
 export * from './ConfirmAlert';
+export * from './Avatar';

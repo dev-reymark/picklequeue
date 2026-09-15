@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Court, PostGameAction, Player } from '@/types';
 import { usePickleballStore } from '@/store/pickleball-store';
-import { PlayerBadge } from '../players/PlayerBadge';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Avatar } from '@/components/ui';
 
 interface EndGameModalProps {
   court: Court;
@@ -51,12 +50,13 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({ court, onClose }) =>
           {courtPlayers.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between bg-white dark:bg-zinc-900/90 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800"
+              title={`${p.name} (${p.skillLevel})`}
+              className="flex items-center gap-2 bg-white dark:bg-zinc-900/90 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 min-w-0"
             >
-              <span className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate pr-1">
+              <Avatar name={p.name} id={p.id} size="xs" />
+              <span className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate flex-1">
                 {p.name}
               </span>
-              <PlayerBadge skillLevel={p.skillLevel} compact />
             </div>
           ))}
         </div>

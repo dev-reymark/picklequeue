@@ -12,6 +12,7 @@ import {
   Chip,
   Button,
   ConfirmAlert,
+  Avatar,
 } from "@/components/ui";
 import { PlayerBadge } from "./PlayerBadge";
 
@@ -231,6 +232,7 @@ export const PlayerListModal: React.FC<PlayerListModalProps> = ({
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <Avatar name={player.name} id={player.id} size="sm" />
                     <span
                       title={player.name}
                       className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-[180px]"

@@ -1,16 +1,20 @@
-import React from 'react';
-import { usePickleballStore } from '@/store/pickleball-store';
-import { QueueGroupCard } from './QueueGroupCard';
-import { suggestBalancedGroup } from '@/lib/matchmaking';
+import React from "react";
+import { usePickleballStore } from "@/store/pickleball-store";
+import { QueueGroupCard } from "./QueueGroupCard";
+import { suggestBalancedGroup } from "@/lib/matchmaking";
+import { Badge, Button } from "@/components/ui";
+import { Users } from "lucide-react";
 
 export const QueuePanel: React.FC = () => {
   const { queue, players, createQueueGroup } = usePickleballStore();
 
-  const availablePlayers = players.filter((p) => p.status === 'available');
+  const waitingPlayers = players.filter(
+    (p) => p.status === "waiting" || (p.status as any) === "available",
+  );
 
   const handleAutoBalancedGroup = () => {
-    if (availablePlayers.length < 4) return;
-    const suggested = suggestBalancedGroup(availablePlayers, 4);
+    if (waitingPlayers.length < 4) return;
+    const suggested = suggestBalancedGroup(waitingPlayers, 4);
     createQueueGroup(suggested.map((p) => p.id));
   };
 
@@ -22,30 +26,32 @@ export const QueuePanel: React.FC = () => {
           <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wide">
             Queue
           </h2>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+          <Badge variant="neutral" size="sm">
             {queue.length}
-          </span>
+          </Badge>
         </div>
 
-        {availablePlayers.length >= 4 && (
-          <button
-            type="button"
+        {waitingPlayers.length >= 4 && (
+          <Button
+            variant="secondary"
+            size="xs"
             onClick={handleAutoBalancedGroup}
-            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 dark:border-zinc-700 transition"
+            className="text-xs"
           >
-            Auto-Balance 4
-          </button>
+            Auto-Balance (4)
+          </Button>
         )}
       </div>
 
       {/* Queue items */}
       <div className="flex-1 space-y-3 overflow-y-auto pr-1">
         {queue.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-center p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40">
-            <p className="text-sm font-medium text-slate-600 dark:text-zinc-400 mb-1">
+          <div className="h-52 flex flex-col items-center justify-center text-center p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40">
+            <Users className="w-8 h-8 text-slate-300 dark:text-zinc-600 mb-2" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">
               Queue is Empty
             </p>
-            <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-[200px]">
+            <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[200px]">
               Select players from the waiting pool to create match groups.
             </p>
           </div>
