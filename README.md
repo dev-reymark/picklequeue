@@ -26,6 +26,13 @@ PICKLEQUEUE is a venue-first operations console designed for pickleball venues, 
 
 ---
 
+## Live Deployments
+
+- **Interactive Web App**: [https://picklequeue-ten.vercel.app/](https://picklequeue-ten.vercel.app/)
+- **Documentation Portal**: [https://dev-reymark.github.io/picklequeue/](https://dev-reymark.github.io/picklequeue/)
+
+---
+
 ## Core Features
 
 - **Venue-Centric Console**: 70% court overview visible across the facility, paired with a dedicated queue sidebar and docked waiting pool.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth dark">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -139,7 +139,7 @@
         </a>
 
         <!-- Open Web App CTA -->
-        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 text-xs font-semibold shadow-sm transition cursor-pointer">
+        <a href="https://picklequeue-ten.vercel.app/" target="_blank" rel="noopener" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 text-xs font-semibold shadow-sm transition cursor-pointer">
           <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
           <span>Launch App</span>
         </a>
@@ -171,7 +171,7 @@
 
       <!-- CTA Buttons -->
       <div class="flex flex-wrap items-center justify-center gap-3 mb-8">
-        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-5 text-sm font-semibold shadow-md shadow-emerald-900/20 transition cursor-pointer">
+        <a href="https://picklequeue-ten.vercel.app/" target="_blank" rel="noopener" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-5 text-sm font-semibold shadow-md shadow-emerald-900/20 transition cursor-pointer">
           <i data-lucide="play" class="h-4 w-4 fill-current"></i>
           <span>Launch Live Web App</span>
         </a>
@@ -207,16 +207,16 @@
           <span class="h-3 w-3 rounded-full bg-rose-500/80"></span>
           <span class="h-3 w-3 rounded-full bg-amber-500/80"></span>
           <span class="h-3 w-3 rounded-full bg-emerald-500/80"></span>
-          <span class="ml-2 text-xs font-mono font-semibold text-slate-500 dark:text-zinc-400">picklequeue.vercel.app</span>
+          <span class="ml-2 text-xs font-mono font-semibold text-slate-500 dark:text-zinc-400">picklequeue-ten.vercel.app</span>
         </div>
 
         <!-- Preview Tab Buttons -->
         <div class="flex items-center gap-1.5 text-xs">
-          <button type="button" onclick="switchPreview('dark')" id="prev-dark" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 shadow-sm">
-            Dark Console
-          </button>
-          <button type="button" onclick="switchPreview('light')" id="prev-light" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
+          <button type="button" onclick="switchPreview('light')" id="prev-light" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 shadow-sm">
             Light Mode
+          </button>
+          <button type="button" onclick="switchPreview('dark')" id="prev-dark" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
+            Dark Console
           </button>
           <button type="button" onclick="switchPreview('settings')" id="prev-settings" class="px-3 py-1 rounded-lg font-medium transition cursor-pointer text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200">
             Settings Modal
@@ -229,7 +229,7 @@
 
       <!-- Preview Image Display -->
       <div class="relative bg-zinc-950 aspect-[16/9] sm:aspect-[16/8.5] overflow-hidden flex items-center justify-center">
-        <img id="main-preview-img" src="screenshots/dashboard-dark.png" alt="PICKLEQUEUE Dashboard Preview" class="w-full h-full object-cover object-top transition duration-300">
+        <img id="main-preview-img" src="screenshots/dashboard-light.png" alt="PICKLEQUEUE Dashboard Preview" class="w-full h-full object-cover object-top transition duration-300">
       </div>
     </div>
   </section>
@@ -905,7 +905,7 @@ npm run build</pre>
 
       <div class="flex items-center gap-6">
         <a href="https://github.com/dev-reymark/picklequeue" target="_blank" rel="noopener" class="hover:text-emerald-500 transition">GitHub</a>
-        <a href="https://picklequeue.vercel.app" target="_blank" rel="noopener" class="hover:text-emerald-500 transition">Live App</a>
+        <a href="https://picklequeue-ten.vercel.app/" target="_blank" rel="noopener" class="hover:text-emerald-500 transition">Live App</a>
         <a href="#overview" class="hover:text-emerald-500 transition">Back to Top &uarr;</a>
       </div>
     </div>
@@ -920,10 +920,11 @@ npm run build</pre>
     const themeToggleBtn = document.getElementById('theme-toggle');
     const storedTheme = localStorage.getItem('picklequeue_docs_theme');
 
-    if (storedTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
+    // Default is LIGHT MODE unless explicitly set to 'dark' by user
+    if (storedTheme === 'dark') {
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
 
     themeToggleBtn.addEventListener('click', () => {
