@@ -1,15 +1,16 @@
-import { Player, Court, QueueGroup } from '@/types';
+import { Player, Court, QueueGroup, Game } from '@/types';
 import { calculateBestTeams } from './matchmaking';
 
 export function getSampleSessionData(): {
   players: Player[];
   courts: Court[];
   queue: QueueGroup[];
+  activeGames: Record<string, Game>;
 } {
   const now = Date.now();
 
   const players: Player[] = [
-    // Playing on Court 1
+    // Playing on Court 1 (matches user's mock: Juan Carlo vs Mark James, 7 - 5)
     { id: 'p1', name: 'Juan Dela Cruz', skillLevel: 'high-intermediate', status: 'playing', createdAt: now - 3600000, gamesPlayed: 3 },
     { id: 'p2', name: 'Carlo Mendoza', skillLevel: 'high-intermediate', status: 'playing', createdAt: now - 3500000, gamesPlayed: 2 },
     { id: 'p3', name: 'Mark Bautista', skillLevel: 'low-intermediate', status: 'playing', createdAt: now - 3400000, gamesPlayed: 1 },
@@ -60,11 +61,16 @@ export function getSampleSessionData(): {
   const court3Players = players.slice(8, 12);
   const match3 = calculateBestTeams(court3Players);
 
+  const game1Id = 'game-c1';
+  const game2Id = 'game-c2';
+  const game3Id = 'game-c3';
+
   const courts: Court[] = [
     {
       id: 'c1',
       name: 'Court 1',
       status: 'playing',
+      currentGameId: game1Id,
       playerIds: court1Players.map((p) => p.id),
       teamAIds: match1.teamAIds,
       teamBIds: match1.teamBIds,
@@ -77,6 +83,7 @@ export function getSampleSessionData(): {
       id: 'c2',
       name: 'Court 2',
       status: 'playing',
+      currentGameId: game2Id,
       playerIds: court2Players.map((p) => p.id),
       teamAIds: match2.teamAIds,
       teamBIds: match2.teamBIds,
@@ -89,6 +96,7 @@ export function getSampleSessionData(): {
       id: 'c3',
       name: 'Court 3',
       status: 'playing',
+      currentGameId: game3Id,
       playerIds: court3Players.map((p) => p.id),
       teamAIds: match3.teamAIds,
       teamBIds: match3.teamBIds,
@@ -117,6 +125,75 @@ export function getSampleSessionData(): {
     },
   ];
 
+  // Active Games matching demo courts
+  const activeGames: Record<string, Game> = {
+    [game1Id]: {
+      id: game1Id,
+      courtId: 'c1',
+      courtName: 'Court 1',
+      teamA: { playerIds: match1.teamAIds },
+      teamB: { playerIds: match1.teamBIds },
+      score: {
+        teamA: 7,
+        teamB: 5,
+        scoringMode: 'manual',
+        targetScore: 11,
+        winBy: 2,
+        servingTeam: 'A',
+        serverNumber: 1,
+      },
+      history: [
+        { id: 'h1', teamA: 6, teamB: 5, servingTeam: 'A', serverNumber: 1, timestamp: now - 35000, description: '+1 Team A (6 - 5)' },
+      ],
+      startedAt: now - 6 * 60 * 1000 - 18000,
+      endsAt: now + 8 * 60 * 1000 + 42000,
+      durationMinutes: 15,
+      status: 'playing',
+    },
+    [game2Id]: {
+      id: game2Id,
+      courtId: 'c2',
+      courtName: 'Court 2',
+      teamA: { playerIds: match2.teamAIds },
+      teamB: { playerIds: match2.teamBIds },
+      score: {
+        teamA: 9,
+        teamB: 10,
+        scoringMode: 'manual',
+        targetScore: 11,
+        winBy: 2,
+        servingTeam: 'B',
+        serverNumber: 2,
+      },
+      history: [],
+      startedAt: now - 13 * 60 * 1000 - 30000,
+      endsAt: now + 1 * 60 * 1000 + 30000,
+      durationMinutes: 15,
+      status: 'playing',
+    },
+    [game3Id]: {
+      id: game3Id,
+      courtId: 'c3',
+      courtName: 'Court 3',
+      teamA: { playerIds: match3.teamAIds },
+      teamB: { playerIds: match3.teamBIds },
+      score: {
+        teamA: 2,
+        teamB: 1,
+        scoringMode: 'manual',
+        targetScore: 11,
+        winBy: 2,
+        servingTeam: 'A',
+        serverNumber: 1,
+      },
+      history: [],
+      startedAt: now - 2 * 60 * 1000 - 45000,
+      endsAt: now + 12 * 60 * 1000 + 15000,
+      durationMinutes: 15,
+      status: 'playing',
+    },
+  };
+
   // Queue Group 1
   const q1Players = players.slice(12, 16);
   const q1Match = calculateBestTeams(q1Players);
@@ -143,5 +220,5 @@ export function getSampleSessionData(): {
     },
   ];
 
-  return { players, courts, queue };
+  return { players, courts, queue, activeGames };
 }

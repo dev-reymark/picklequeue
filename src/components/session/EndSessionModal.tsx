@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { X } from "lucide-react";
 import { usePickleballStore } from "@/store/pickleball-store";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { formatDuration } from "@/lib/utils";
@@ -71,9 +72,10 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-lg px-2 font-bold"
+            aria-label="Close dialog"
+            className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 p-1.5 rounded-lg cursor-pointer transition flex items-center justify-center"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -129,10 +131,22 @@ export const EndSessionModal: React.FC<EndSessionModalProps> = ({
                   key={g.id}
                   className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800"
                 >
-                  <span className="font-medium text-slate-800 dark:text-zinc-200">
-                    Match #{games.length - idx}: {g.courtName}
-                  </span>
-                  <span className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-semibold text-slate-800 dark:text-zinc-200 shrink-0">
+                      Match #{games.length - idx}: {g.courtName}
+                    </span>
+                    {g.score && (
+                      <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 shrink-0">
+                        {g.score.teamA} - {g.score.teamB}
+                      </span>
+                    )}
+                    {g.winner && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shrink-0">
+                        Team {g.winner} Won
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-slate-500 dark:text-zinc-400 font-mono text-[11px] shrink-0">
                     {g.durationMinutes} min
                   </span>
                 </div>

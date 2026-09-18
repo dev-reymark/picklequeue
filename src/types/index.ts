@@ -44,10 +44,58 @@ export interface QueueGroup {
 
 export type CourtStatus = 'available' | 'playing';
 
+export type Team = 'A' | 'B';
+
+export type ScoringMode = 'manual' | 'side-out' | 'rally';
+
+export type GameEndingRule = 'timer' | 'score' | 'both';
+
+export interface GameScore {
+  teamA: number;
+  teamB: number;
+  scoringMode: ScoringMode;
+  targetScore: number;
+  winBy: number;
+  servingTeam?: Team;
+  serverNumber?: 1 | 2;
+  winner?: Team;
+}
+
+export interface ScoreHistoryEntry {
+  id: string;
+  teamA: number;
+  teamB: number;
+  servingTeam?: Team;
+  serverNumber?: 1 | 2;
+  winner?: Team;
+  timestamp: number;
+  description?: string;
+}
+
+export interface Game {
+  id: string;
+  courtId: string;
+  courtName?: string;
+  teamA: {
+    playerIds: string[];
+  };
+  teamB: {
+    playerIds: string[];
+  };
+  score: GameScore;
+  history: ScoreHistoryEntry[];
+  startedAt: number;
+  endsAt?: number;
+  endedAt?: number;
+  durationMinutes?: number;
+  status: 'playing' | 'completed';
+}
+
 export interface Court {
   id: string;
   name: string;
   status: CourtStatus;
+  currentGameId?: string;
   playerIds: string[];
   teamAIds?: string[];
   teamBIds?: string[];
@@ -64,6 +112,8 @@ export interface GameRecord {
   playerIds: string[];
   teamAIds: string[];
   teamBIds: string[];
+  score?: GameScore;
+  winner?: Team;
   startedAt: number;
   endedAt: number;
   durationMinutes: number;
@@ -88,7 +138,11 @@ export type SoundEvent =
   | 'warning-30s'
   | 'time-up'
   | 'court-available'
-  | 'error';
+  | 'error'
+  | 'point-scored'
+  | 'side-out'
+  | 'game-won'
+  | 'score-undo';
 
 export type QueueMode = 'fifo' | 'skill-balanced';
 
@@ -118,6 +172,13 @@ export interface Settings {
   timerSounds: boolean;
   vibrationEnabled: boolean;
   hasCompletedTutorial: boolean;
+  // Scoring configuration
+  scoringEnabled: boolean;
+  scoringMode: ScoringMode;
+  targetScore: number;
+  winBy: number;
+  showServingTeam: boolean;
+  gameEndingRule: GameEndingRule;
 }
 
 export const SKILL_RATINGS: Record<SkillLevel, number> = {

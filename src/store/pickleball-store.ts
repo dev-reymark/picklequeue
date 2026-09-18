@@ -10,17 +10,25 @@ import {
   PostGameAction,
   GameRecord,
   SessionInfo,
+  Game,
+  Team,
 } from '@/types';
 import { calculateBestTeams } from '@/lib/matchmaking';
 import { generateId } from '@/lib/utils';
 import { getSampleSessionData } from '@/lib/demo-data';
-import { playSound } from '@/lib/sound';
+import { playSound, playSoundEvent } from '@/lib/sound';
+import {
+  applyGameAction,
+  undoGameAction,
+  createInitialScore,
+} from '@/lib/scoring';
 
 export interface PickleballStoreState {
   players: Player[];
   courts: Court[];
   queue: QueueGroup[];
   games: GameRecord[];
+  activeGames: Record<string, Game>;
   session: SessionInfo;
   settings: Settings;
   isHydrated: boolean;
@@ -51,6 +59,14 @@ export interface PickleballStoreState {
   assignNextQueueToCourt: (courtId: string) => void;
   addCourtTime: (courtId: string, additionalMinutes: number) => void;
   endGame: (courtId: string, action: PostGameAction) => void;
+
+  // Scoring Actions
+  scoreRally: (gameId: string, winningTeam: Team) => void;
+  adjustManualScore: (gameId: string, team: Team, delta: 1 | -1) => void;
+  undoScoreAction: (gameId: string) => void;
+  resetGameScore: (gameId: string) => void;
+  setServingDetails: (gameId: string, servingTeam: Team, serverNumber?: 1 | 2) => void;
+  setGameWinner: (gameId: string, winner?: Team) => void;
 
   updateSettings: (newSettings: Partial<Settings>) => void;
   startNewSession: (venueName?: string, sessionName?: string) => void;
@@ -84,6 +100,12 @@ const DEFAULT_SETTINGS: Settings = {
   timerSounds: true,
   vibrationEnabled: false,
   hasCompletedTutorial: false,
+  scoringEnabled: true,
+  scoringMode: 'manual',
+  targetScore: 11,
+  winBy: 2,
+  showServingTeam: true,
+  gameEndingRule: 'both',
 };
 
 function generateInitialCourts(count: number): Court[] {
@@ -102,6 +124,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
       courts: generateInitialCourts(6),
       queue: [],
       games: [],
+      activeGames: {},
       session: {
         id: generateId(),
         venueName: 'Smash Point Pickleball',
@@ -312,6 +335,28 @@ export const usePickleballStore = create<PickleballStoreState>()(
         const now = Date.now();
         const endsAt = now + durationMinutes * 60 * 1000;
 
+        const newGameId = generateId();
+        const initialScore = createInitialScore(
+          state.settings.scoringMode || 'manual',
+          state.settings.targetScore || 11,
+          state.settings.winBy || 2,
+          'A'
+        );
+
+        const newGame: Game = {
+          id: newGameId,
+          courtId,
+          courtName: court.name,
+          teamA: { playerIds: group.teamAIds },
+          teamB: { playerIds: group.teamBIds },
+          score: initialScore,
+          history: [],
+          startedAt: now,
+          endsAt,
+          durationMinutes,
+          status: 'playing',
+        };
+
         set((s) => ({
           queue: s.queue.filter((q) => q.id !== groupId),
           courts: s.courts.map((c) =>
@@ -319,6 +364,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
               ? {
                   ...c,
                   status: 'playing',
+                  currentGameId: newGameId,
                   playerIds: group.playerIds,
                   teamAIds: group.teamAIds,
                   teamBIds: group.teamBIds,
@@ -329,6 +375,10 @@ export const usePickleballStore = create<PickleballStoreState>()(
                 }
               : c
           ),
+          activeGames: {
+            ...s.activeGames,
+            [newGameId]: newGame,
+          },
           players: s.players.map((p) =>
             group.playerIds.includes(p.id)
               ? { ...p, status: 'playing', gamesPlayed: p.gamesPlayed + 1 }
@@ -367,19 +417,28 @@ export const usePickleballStore = create<PickleballStoreState>()(
 
         const courtPlayerIds = [...court.playerIds];
         const now = Date.now();
+        const activeGame = court.currentGameId ? state.activeGames[court.currentGameId] : undefined;
 
         // Record completed match into history
         const newGameRecord: GameRecord = {
-          id: generateId(),
+          id: activeGame?.id || generateId(),
           courtId: court.id,
           courtName: court.name,
           playerIds: court.playerIds,
           teamAIds: court.teamAIds || [],
           teamBIds: court.teamBIds || [],
+          score: activeGame?.score,
+          winner: activeGame?.score?.winner,
           startedAt: court.startedAt || now - 15 * 60 * 1000,
           endedAt: now,
           durationMinutes: court.durationMinutes || state.settings.defaultGameDuration,
         };
+
+        // Remove from activeGames
+        const updatedActiveGames = { ...state.activeGames };
+        if (court.currentGameId) {
+          delete updatedActiveGames[court.currentGameId];
+        }
 
         // 1. Reset court to available
         const updatedCourts = state.courts.map((c) =>
@@ -387,6 +446,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
             ? {
                 ...c,
                 status: 'available' as const,
+                currentGameId: undefined,
                 playerIds: [],
                 teamAIds: undefined,
                 teamBIds: undefined,
@@ -455,11 +515,36 @@ export const usePickleballStore = create<PickleballStoreState>()(
           updatedQueue = updatedQueue.slice(1);
 
           const gameDuration = court.durationMinutes || state.settings.defaultGameDuration;
+          const nextGameId = generateId();
+          const nextInitialScore = createInitialScore(
+            state.settings.scoringMode || 'manual',
+            state.settings.targetScore || 11,
+            state.settings.winBy || 2,
+            'A'
+          );
+
+          const nextGame: Game = {
+            id: nextGameId,
+            courtId,
+            courtName: court.name,
+            teamA: { playerIds: nextGroup.teamAIds },
+            teamB: { playerIds: nextGroup.teamBIds },
+            score: nextInitialScore,
+            history: [],
+            startedAt: now,
+            endsAt: now + gameDuration * 60 * 1000,
+            durationMinutes: gameDuration,
+            status: 'playing',
+          };
+
+          updatedActiveGames[nextGameId] = nextGame;
+
           finalCourts = finalCourts.map((c) =>
             c.id === courtId
               ? {
                   ...c,
                   status: 'playing' as const,
+                  currentGameId: nextGameId,
                   playerIds: nextGroup.playerIds,
                   teamAIds: nextGroup.teamAIds,
                   teamBIds: nextGroup.teamBIds,
@@ -482,9 +567,139 @@ export const usePickleballStore = create<PickleballStoreState>()(
 
         set((s) => ({
           courts: finalCourts,
+          activeGames: updatedActiveGames,
           games: [newGameRecord, ...s.games],
           queue: updatedQueue,
           players: updatedPlayers,
+        }));
+      },
+
+      // Scoring Actions
+      scoreRally: (gameId: string, winningTeam: Team) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame, soundEvent } = applyGameAction(game, {
+          type: 'RALLY_WINNER',
+          winningTeam,
+        });
+
+        if (soundEvent) {
+          playSoundEvent(soundEvent);
+        }
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
+        }));
+      },
+
+      adjustManualScore: (gameId: string, team: Team, delta: 1 | -1) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame, soundEvent } = applyGameAction(game, {
+          type: 'MANUAL_POINT',
+          team,
+          delta,
+        });
+
+        if (soundEvent) {
+          playSoundEvent(soundEvent);
+        }
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
+        }));
+      },
+
+      undoScoreAction: (gameId: string) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame, soundEvent } = undoGameAction(game);
+
+        if (soundEvent) {
+          playSoundEvent(soundEvent);
+        }
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
+        }));
+      },
+
+      resetGameScore: (gameId: string) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame } = applyGameAction(game, {
+          type: 'RESET_SCORE',
+        });
+
+        playSound.click();
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
+        }));
+      },
+
+      setServingDetails: (gameId: string, servingTeam: Team, serverNumber?: 1 | 2) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame, soundEvent } = applyGameAction(game, {
+          type: 'SET_SERVER',
+          servingTeam,
+          serverNumber,
+        });
+
+        if (soundEvent) {
+          playSoundEvent(soundEvent);
+        }
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
+        }));
+      },
+
+      setGameWinner: (gameId: string, winner?: Team) => {
+        const state = get();
+        const game = state.activeGames[gameId];
+        if (!game || game.status !== 'playing') return;
+
+        const { game: updatedGame, soundEvent } = applyGameAction(game, {
+          type: 'SET_WINNER',
+          winner,
+        });
+
+        if (soundEvent) {
+          playSoundEvent(soundEvent);
+        }
+
+        set((s) => ({
+          activeGames: {
+            ...s.activeGames,
+            [gameId]: updatedGame,
+          },
         }));
       },
 
@@ -512,7 +727,28 @@ export const usePickleballStore = create<PickleballStoreState>()(
             }
           }
 
-          return { settings: mergedSettings, courts };
+          // Propagate rule updates (scoringMode, targetScore, winBy) to active ongoing matches
+          let activeGames = { ...state.activeGames };
+          if (
+            newSettings.scoringMode !== undefined ||
+            newSettings.targetScore !== undefined ||
+            newSettings.winBy !== undefined
+          ) {
+            Object.keys(activeGames).forEach((gameId) => {
+              const game = activeGames[gameId];
+              activeGames[gameId] = {
+                ...game,
+                score: {
+                  ...game.score,
+                  scoringMode: newSettings.scoringMode ?? game.score.scoringMode,
+                  targetScore: newSettings.targetScore ?? game.score.targetScore,
+                  winBy: newSettings.winBy ?? game.score.winBy,
+                },
+              };
+            });
+          }
+
+          return { settings: mergedSettings, courts, activeGames };
         });
       },
 
@@ -525,10 +761,12 @@ export const usePickleballStore = create<PickleballStoreState>()(
             startedAt: Date.now(),
           },
           games: [],
+          activeGames: {},
           queue: [],
           courts: state.courts.map((c) => ({
             ...c,
             status: 'available',
+            currentGameId: undefined,
             playerIds: [],
             startedAt: undefined,
             endsAt: undefined,
@@ -555,6 +793,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
           courts: generateInitialCourts(state.settings.courtCount),
           queue: [],
           games: [],
+          activeGames: {},
           players: state.players.map((p) => ({
             ...p,
             status: 'waiting',
@@ -569,6 +808,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
           courts: generateInitialCourts(6),
           queue: [],
           games: [],
+          activeGames: {},
           session: {
             id: generateId(),
             venueName: 'Smash Point Pickleball',
@@ -587,6 +827,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
             status: p.status === 'available' ? 'waiting' : p.status,
           })),
           courts: demo.courts,
+          activeGames: demo.activeGames,
           queue: demo.queue,
           games: [],
           session: {
@@ -608,7 +849,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
       exportBackupJson: () => {
         const state = get();
         const backupData = {
-          version: '1.1.0',
+          version: '1.2.0',
           exportedAt: new Date().toISOString(),
           venueName: state.settings.venueName,
           session: state.session,
@@ -617,6 +858,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
           courts: state.courts,
           queue: state.queue,
           games: state.games,
+          activeGames: state.activeGames,
         };
         return JSON.stringify(backupData, null, 2);
       },
@@ -633,6 +875,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
             courts: data.courts || generateInitialCourts(6),
             queue: data.queue || [],
             games: data.games || [],
+            activeGames: data.activeGames || {},
             session: data.session || {
               id: generateId(),
               venueName: data.settings?.venueName || 'Imported Session',
@@ -660,7 +903,15 @@ export const usePickleballStore = create<PickleballStoreState>()(
             ...(state.settings || {}),
             venueName: state.settings?.venueName || DEFAULT_SETTINGS.venueName,
             sessionName: state.settings?.sessionName || DEFAULT_SETTINGS.sessionName,
+            scoringEnabled: state.settings?.scoringEnabled ?? DEFAULT_SETTINGS.scoringEnabled,
+            scoringMode: state.settings?.scoringMode ?? DEFAULT_SETTINGS.scoringMode,
+            targetScore: state.settings?.targetScore ?? DEFAULT_SETTINGS.targetScore,
+            winBy: state.settings?.winBy ?? DEFAULT_SETTINGS.winBy,
+            showServingTeam: state.settings?.showServingTeam ?? DEFAULT_SETTINGS.showServingTeam,
+            gameEndingRule: state.settings?.gameEndingRule ?? DEFAULT_SETTINGS.gameEndingRule,
           };
+          // Ensure activeGames object exists
+          state.activeGames = state.activeGames || {};
           // If first run and hasn't completed tutorial, start tutorial
           if (!state.settings.hasCompletedTutorial) {
             state.startTutorial();

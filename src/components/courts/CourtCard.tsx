@@ -1,10 +1,11 @@
 import { playSound } from "@/lib/sound";
 import React, { useState, useEffect, useRef } from "react";
-import { Court, Player } from "@/types";
+import { Court, Player, Game } from "@/types";
 import { usePickleballStore } from "@/store/pickleball-store";
 import { GameTimer } from "./GameTimer";
 import { EndGameModal } from "./EndGameModal";
 import { Chip, Badge, Button, Select, Avatar } from "@/components/ui";
+import { Scoreboard } from "@/components/scoring";
 
 interface CourtCardProps {
   court: Court;
@@ -15,6 +16,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
     players,
     queue,
     settings,
+    activeGames,
     assignNextQueueToCourt,
     assignGroupToCourt,
     addCourtTime,
@@ -72,6 +74,30 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
       ? teamBPlayers
       : courtPlayers.slice(Math.ceil(courtPlayers.length / 2));
 
+  // Retrieve active game for this court or create a fallback instance
+  const activeGame = court.currentGameId ? activeGames[court.currentGameId] : undefined;
+  const effectiveGame: Game | undefined = activeGame || (isPlaying ? {
+    id: `game-${court.id}`,
+    courtId: court.id,
+    courtName: court.name,
+    teamA: { playerIds: court.teamAIds || displayTeamA.map((p) => p.id) },
+    teamB: { playerIds: court.teamBIds || displayTeamB.map((p) => p.id) },
+    score: {
+      teamA: 0,
+      teamB: 0,
+      scoringMode: settings.scoringMode || 'manual',
+      targetScore: settings.targetScore || 11,
+      winBy: settings.winBy || 2,
+      servingTeam: 'A',
+      serverNumber: settings.scoringMode === 'side-out' ? 2 : 1,
+    },
+    history: [],
+    startedAt: court.startedAt || Date.now(),
+    endsAt: court.endsAt,
+    durationMinutes: court.durationMinutes || settings.defaultGameDuration,
+    status: 'playing',
+  } : undefined);
+
   // Determine card style based on state
   let cardBorderClass =
     "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs";
@@ -79,23 +105,30 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
   let statusText = "Available";
 
   if (isPlaying) {
-    const now = Date.now();
-    const remainingMs = (court.endsAt || now) - now;
-    if (remainingMs <= 0) {
+    if (effectiveGame?.score?.winner) {
       cardBorderClass =
-        "border-rose-300 dark:border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.12)] bg-white dark:bg-zinc-900";
-      chipVariant = "rose";
-      statusText = settings.allowOvertime ? "Overtime" : "Time's Up";
-    } else if (remainingMs <= settings.warningTimeSeconds * 1000) {
-      cardBorderClass =
-        "border-amber-300 dark:border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.12)] bg-white dark:bg-zinc-900";
-      chipVariant = "amber";
-      statusText = "Ending Soon";
+        "border-emerald-400 dark:border-emerald-500/70 shadow-[0_0_20px_rgba(16,185,129,0.15)] bg-white dark:bg-zinc-900";
+      chipVariant = "emerald";
+      statusText = `Team ${effectiveGame.score.winner} Won`;
     } else {
-      cardBorderClass =
-        "border-sky-200 dark:border-sky-500/30 bg-white dark:bg-zinc-900 shadow-xs";
-      chipVariant = "sky";
-      statusText = "In Play";
+      const now = Date.now();
+      const remainingMs = (court.endsAt || now) - now;
+      if (remainingMs <= 0) {
+        cardBorderClass =
+          "border-rose-300 dark:border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.12)] bg-white dark:bg-zinc-900";
+        chipVariant = "rose";
+        statusText = settings.allowOvertime ? "Overtime" : "Time's Up";
+      } else if (remainingMs <= settings.warningTimeSeconds * 1000) {
+        cardBorderClass =
+          "border-amber-300 dark:border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.12)] bg-white dark:bg-zinc-900";
+        chipVariant = "amber";
+        statusText = "Ending Soon";
+      } else {
+        cardBorderClass =
+          "border-sky-200 dark:border-sky-500/30 bg-white dark:bg-zinc-900 shadow-xs";
+        chipVariant = "sky";
+        statusText = "In Play";
+      }
     }
   } else {
     cardBorderClass =
@@ -163,68 +196,77 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court }) => {
                 timerDirection={settings.timerDirection}
               />
 
-              {/* Matchup: Team A vs Team B */}
-              <div className="bg-slate-50/80 dark:bg-zinc-950/70 rounded-xl p-3 border border-slate-200 dark:border-zinc-800/80">
-                <div className="grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-zinc-800">
-                  {/* Team A */}
-                  <div className="pr-2 min-w-0">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
-                      <span className="uppercase tracking-wider">Team A</span>
-                      {court.balance && (
-                        <span
-                          title={`Team A Rating: ${court.balance.teamARating}`}
-                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
-                        >
-                          {court.balance.teamARating}
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      {displayTeamA.map((p) => (
-                        <div
-                          key={p.id}
-                          title={`${p.name} (${p.skillLevel})`}
-                          className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
-                        >
-                          <Avatar name={p.name} id={p.id} size="xs" />
-                          <span className="truncate flex-1">
-                            {p.name}
+              {/* Scoring Feature Module or Matchup View */}
+              {settings.scoringEnabled && effectiveGame ? (
+                <Scoreboard
+                  game={effectiveGame}
+                  court={court}
+                  onOpenEndGameModal={() => setIsEndModalOpen(true)}
+                />
+              ) : (
+                /* Static Matchup fallback when scoring is disabled in settings */
+                <div className="bg-slate-50/80 dark:bg-zinc-950/70 rounded-xl p-3 border border-slate-200 dark:border-zinc-800/80">
+                  <div className="grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-zinc-800">
+                    {/* Team A */}
+                    <div className="pr-2 min-w-0">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
+                        <span className="uppercase tracking-wider">Team A</span>
+                        {court.balance && (
+                          <span
+                            title={`Team A Rating: ${court.balance.teamARating}`}
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
+                          >
+                            {court.balance.teamARating}
                           </span>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        {displayTeamA.map((p) => (
+                          <div
+                            key={p.id}
+                            title={`${p.name} (${p.skillLevel})`}
+                            className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
+                          >
+                            <Avatar name={p.name} id={p.id} size="xs" />
+                            <span className="truncate flex-1">
+                              {p.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Team B */}
-                  <div className="pl-3 min-w-0">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
-                      <span className="uppercase tracking-wider">Team B</span>
-                      {court.balance && (
-                        <span
-                          title={`Team B Rating: ${court.balance.teamBRating}`}
-                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
-                        >
-                          {court.balance.teamBRating}
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      {displayTeamB.map((p) => (
-                        <div
-                          key={p.id}
-                          title={`${p.name} (${p.skillLevel})`}
-                          className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
-                        >
-                          <Avatar name={p.name} id={p.id} size="xs" />
-                          <span className="truncate flex-1">
-                            {p.name}
+                    {/* Team B */}
+                    <div className="pl-3 min-w-0">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400 mb-2">
+                        <span className="uppercase tracking-wider">Team B</span>
+                        {court.balance && (
+                          <span
+                            title={`Team B Rating: ${court.balance.teamBRating}`}
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-medium shrink-0"
+                          >
+                            {court.balance.teamBRating}
                           </span>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        {displayTeamB.map((p) => (
+                          <div
+                            key={p.id}
+                            title={`${p.name} (${p.skillLevel})`}
+                            className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-zinc-200 min-w-0"
+                          >
+                            <Avatar name={p.name} id={p.id} size="xs" />
+                            <span className="truncate flex-1">
+                              {p.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             /* Available State */

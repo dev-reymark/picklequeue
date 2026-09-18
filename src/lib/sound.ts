@@ -34,7 +34,7 @@ export function playSoundEvent(event: SoundEvent): void {
   if (!masterEnabled || profile === 'silent') return;
 
   // Sound filtering according to profile & category
-  const isUiSound = event === 'click';
+  const isUiSound = event === 'click' || event === 'score-undo';
   const isQueueSound =
     event === 'player-added' ||
     event === 'queue-created' ||
@@ -43,11 +43,13 @@ export function playSoundEvent(event: SoundEvent): void {
     event === 'error';
   const isTimerSound =
     event === 'warning-2m' || event === 'warning-30s' || event === 'time-up';
+  const isScoringSound =
+    event === 'point-scored' || event === 'side-out' || event === 'game-won';
 
   if (profile === 'minimal') {
-    // Minimal profile only allows timer alerts and court assignments
+    // Minimal profile allows timer alerts, court assignments, and game-won
     if (isUiSound) return;
-    if (event === 'player-added' || event === 'queue-created') return;
+    if (event === 'player-added' || event === 'queue-created' || event === 'point-scored') return;
   } else if (profile === 'standard') {
     if (isUiSound && settings.uiSounds === false) return;
     if (isQueueSound && settings.queueSounds === false) return;
@@ -56,12 +58,14 @@ export function playSoundEvent(event: SoundEvent): void {
 
   // Trigger optional mobile haptic vibration
   if (settings.vibrationEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
-    if (event === 'time-up') {
+    if (event === 'time-up' || event === 'game-won') {
       navigator.vibrate([200, 100, 200]);
     } else if (event === 'warning-2m' || event === 'warning-30s') {
       navigator.vibrate(120);
-    } else if (event === 'court-assigned') {
+    } else if (event === 'court-assigned' || event === 'side-out') {
       navigator.vibrate(80);
+    } else if (event === 'point-scored') {
+      navigator.vibrate(40);
     }
   }
 
@@ -228,6 +232,81 @@ export function playSoundEvent(event: SoundEvent): void {
         osc.stop(now + 0.15);
         break;
       }
+
+      case 'point-scored': {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, now); // E5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.08); // A5
+        gain.gain.setValueAtTime(0.12 * volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+        break;
+      }
+
+      case 'side-out': {
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(523.25, now); // C5
+        gain1.gain.setValueAtTime(0.12 * volume, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.1);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(392.00, now + 0.1); // G4
+        gain2.gain.setValueAtTime(0.14 * volume, now + 0.1);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.1);
+        osc2.stop(now + 0.26);
+        break;
+      }
+
+      case 'game-won': {
+        // Triumphant ascending triad fanfare (C5 -> E5 -> G5 -> C6)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const startTime = now + idx * 0.1;
+          const duration = idx === notes.length - 1 ? 0.45 : 0.1;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.15 * volume, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        });
+        break;
+      }
+
+      case 'score-undo': {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.06);
+        gain.gain.setValueAtTime(0.08 * volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+        break;
+      }
     }
   } catch {}
 }
@@ -244,6 +323,10 @@ export const playSound = {
   timeUp: () => playSoundEvent('time-up'),
   courtAvailable: () => playSoundEvent('court-available'),
   error: () => playSoundEvent('error'),
+  pointScored: () => playSoundEvent('point-scored'),
+  sideOut: () => playSoundEvent('side-out'),
+  gameWon: () => playSoundEvent('game-won'),
+  undo: () => playSoundEvent('score-undo'),
   // Legacy aliases
   warningChime: () => playSoundEvent('warning-2m'),
   buzzer: () => playSoundEvent('time-up'),

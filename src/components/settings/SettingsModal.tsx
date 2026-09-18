@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { usePickleballStore } from "@/store/pickleball-store";
-import { QueueMode, SoundProfile, TimerDirection } from "@/types";
+import {
+  QueueMode,
+  SoundProfile,
+  TimerDirection,
+  ScoringMode,
+  GameEndingRule,
+} from "@/types";
 import { playCourtEndBuzzer } from "@/lib/sound";
-import { Modal, Tabs, TabItem, Checkbox, Input, Select, Button, ConfirmAlert } from "@/components/ui";
+import {
+  Modal,
+  Tabs,
+  TabItem,
+  Checkbox,
+  Input,
+  Select,
+  Button,
+  ConfirmAlert,
+} from "@/components/ui";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,6 +28,7 @@ interface SettingsModalProps {
 type SettingsTab =
   | "general"
   | "game"
+  | "scoring"
   | "queue"
   | "courts"
   | "notifications"
@@ -44,7 +60,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     title: string;
     message: string;
     confirmText: string;
-    variant: 'danger' | 'warning';
+    variant: "danger" | "warning";
     action: () => void;
   } | null>(null);
 
@@ -96,6 +112,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [vibrationEnabled, setVibrationEnabled] = useState(
     settings?.vibrationEnabled ?? false,
   );
+  // Scoring state
+  const [scoringEnabled, setScoringEnabled] = useState(
+    settings?.scoringEnabled ?? true,
+  );
+  const [scoringMode, setScoringMode] = useState<ScoringMode>(
+    settings?.scoringMode || "manual",
+  );
+  const [targetScore, setTargetScore] = useState<number>(
+    settings?.targetScore || 11,
+  );
+  const [winBy, setWinBy] = useState<number>(settings?.winBy || 2);
+  const [showServingTeam, setShowServingTeam] = useState<boolean>(
+    settings?.showServingTeam ?? true,
+  );
+  const [gameEndingRule, setGameEndingRule] = useState<GameEndingRule>(
+    settings?.gameEndingRule || "both",
+  );
 
   // Sync state whenever modal is opened
   useEffect(() => {
@@ -121,6 +154,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setQueueSounds(settings?.queueSounds ?? true);
       setTimerSounds(settings?.timerSounds ?? true);
       setVibrationEnabled(settings?.vibrationEnabled ?? false);
+      setScoringEnabled(settings?.scoringEnabled ?? true);
+      setScoringMode(settings?.scoringMode || "manual");
+      setTargetScore(settings?.targetScore || 11);
+      setWinBy(settings?.winBy || 2);
+      setShowServingTeam(settings?.showServingTeam ?? true);
+      setGameEndingRule(settings?.gameEndingRule || "both");
     }
   }, [isOpen, settings]);
 
@@ -155,6 +194,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       queueSounds: queueSounds ?? true,
       timerSounds: timerSounds ?? true,
       vibrationEnabled: vibrationEnabled ?? false,
+      scoringEnabled: scoringEnabled ?? true,
+      scoringMode: scoringMode || "manual",
+      targetScore: targetScore || 11,
+      winBy: winBy || 2,
+      showServingTeam: showServingTeam ?? true,
+      gameEndingRule: gameEndingRule || "both",
     });
     onClose();
   };
@@ -249,6 +294,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             strokeLinejoin="round"
             strokeWidth={2}
             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
+    {
+      id: "scoring",
+      label: "Scoring Engine",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
           />
         </svg>
       ),
@@ -353,805 +417,1003 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <>
       <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="System Settings"
-      description="Configure venue operations, match rules, and queuing policies"
-      maxWidth="3xl"
-      fullPageOnMobile
-      dialogClassName="sm:h-[650px]"
-      showCloseButton={false}
-      bodyClassName="p-0 flex flex-col md:flex-row overflow-hidden min-h-0"
-      footer={
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
-          >
-            Save Settings
-          </button>
-        </>
-      }
-    >
-      <Tabs
-        items={tabs}
-        activeTab={activeTab}
-        onChange={(id) => setActiveTab(id as SettingsTab)}
-        orientation="responsive"
-      />
+        isOpen={isOpen}
+        onClose={onClose}
+        title="System Settings"
+        description="Configure venue operations, match rules, and queuing policies"
+        maxWidth="3xl"
+        fullPageOnMobile
+        dialogClassName="sm:h-[650px]"
+        showCloseButton={false}
+        bodyClassName="p-0 flex flex-col md:flex-row overflow-hidden min-h-0"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="px-5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
+            >
+              Save Settings
+            </button>
+          </>
+        }
+      >
+        <Tabs
+          items={tabs}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as SettingsTab)}
+          orientation="responsive"
+        />
 
-      {/* Right Pane */}
-      <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5">
-        {/* Tab 1: General */}
-        {activeTab === "general" && (
-          <div className="space-y-4">
-            <Input
-              label="Venue Name"
-              type="text"
-              value={venueName || ""}
-              onChange={(e) => setVenueName(e.target.value)}
-              placeholder="e.g. Smash Point Pickleball"
-            />
-
-            <Input
-              label="Session Title"
-              type="text"
-              value={sessionName || ""}
-              onChange={(e) => setSessionName(e.target.value)}
-              placeholder="e.g. Tuesday Evening Session"
-            />
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Number of Courts
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Total courts available in this venue (1–12)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCourtCount((c) => Math.max(1, c - 1))}
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
-                >
-                  -
-                </button>
-                <span className="w-8 text-center font-bold text-sm text-slate-900 dark:text-zinc-100 font-mono">
-                  {courtCount}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCourtCount((c) => Math.min(12, c + 1))}
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Players Per Match
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Doubles (4 players) or Singles (2 players)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPlayersPerGroup(4)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    playersPerGroup === 4
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
-                  }`}
-                >
-                  4 (Doubles)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPlayersPerGroup(2)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    playersPerGroup === 2
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
-                  }`}
-                >
-                  2 (Singles)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Game Rules */}
-        {activeTab === "game" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Default Match Duration
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Countdown timer length per match
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDefaultGameDuration((d) => Math.max(5, d - 5))
-                  }
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
-                >
-                  -
-                </button>
-                <span className="w-16 text-center font-bold text-sm text-slate-900 dark:text-zinc-100 font-mono">
-                  {defaultGameDuration} min
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDefaultGameDuration((d) => Math.min(60, d + 5))
-                  }
-                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Warning Before End
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  When timer turns amber and pulses &ldquo;Ending Soon&rdquo;
-                </span>
-              </div>
-              <Select
-                value={warningTimeSeconds}
-                onChange={(e) => setWarningTimeSeconds(Number(e.target.value))}
-                containerClassName="w-full sm:w-48"
-                options={[
-                  { value: 60, label: "1 minute" },
-                  { value: 120, label: "2 minutes (Default)" },
-                  { value: 180, label: "3 minutes" },
-                ]}
+        {/* Right Pane */}
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5">
+          {/* Tab 1: General */}
+          {activeTab === "general" && (
+            <div className="space-y-4">
+              <Input
+                label="Venue Name"
+                type="text"
+                value={venueName || ""}
+                onChange={(e) => setVenueName(e.target.value)}
+                placeholder="e.g. Smash Point Pickleball"
               />
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Timer Direction
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Countdown (Remaining) or Count-up (Elapsed time)
-                </span>
-              </div>
-              <Select
-                value={timerDirection}
-                onChange={(e) =>
-                  setTimerDirection(e.target.value as TimerDirection)
-                }
-                containerClassName="w-full sm:w-56"
-                options={[
-                  { value: "countdown", label: "Countdown (15:00 → 00:00)" },
-                  { value: "countup", label: "Count-up (00:00 → 15:00)" },
-                ]}
+              <Input
+                label="Session Title"
+                type="text"
+                value={sessionName || ""}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder="e.g. Tuesday Evening Session"
               />
-            </div>
 
-            <div className="py-2 space-y-2">
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                Overtime Behavior
-              </span>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
-                  <input
-                    type="radio"
-                    name="overtime"
-                    checked={allowOvertime}
-                    onChange={() => setAllowOvertime(true)}
-                    className="text-emerald-500 cursor-pointer"
-                  />
-                  <span>
-                    <strong>Allow Overtime (Recommended)</strong> &bull; Shows
-                    +MM:SS elapsed until organizer ends game
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
-                  <input
-                    type="radio"
-                    name="overtime"
-                    checked={!allowOvertime}
-                    onChange={() => setAllowOvertime(false)}
-                    className="text-emerald-500 cursor-pointer"
-                  />
-                  <span>
-                    <strong>Auto-Prompt Game End</strong> &bull; Triggers
-                    end-game dialog immediately at 00:00
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Queue & Rotation */}
-        {activeTab === "queue" && (
-          <div className="space-y-4">
-            <div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-1.5 uppercase tracking-wider">
-                Queue Mode
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setQueueMode("fifo")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                    queueMode === "fifo"
-                      ? "bg-slate-100 dark:bg-zinc-800 border-emerald-500 text-slate-900 dark:text-zinc-100"
-                      : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
-                  }`}
-                >
-                  <span className="text-xs font-bold block mb-0.5">
-                    First-Come, First-Served
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Number of Courts
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Normal FIFO rotation in order of queue entry
+                    Total courts available in this venue (1–12)
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQueueMode("skill-balanced")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                    queueMode === "skill-balanced"
-                      ? "bg-slate-100 dark:bg-zinc-800 border-emerald-500 text-slate-900 dark:text-zinc-100"
-                      : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
-                  }`}
-                >
-                  <span className="text-xs font-bold block mb-0.5">
-                    Skill Balanced Mode
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCourtCount((c) => Math.max(1, c - 1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-bold text-sm text-slate-900 dark:text-zinc-100 font-mono">
+                    {courtCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCourtCount((c) => Math.min(12, c + 1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Players Per Match
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Optimizes group selection to match similar skill ratings
+                    Doubles (4 players) or Singles (2 players)
                   </span>
-                </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPlayersPerGroup(4)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      playersPerGroup === 4
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }`}
+                  >
+                    4 (Doubles)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlayersPerGroup(2)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      playersPerGroup === 2
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }`}
+                  >
+                    2 (Singles)
+                  </button>
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Default Post-Match Action
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Standard workflow when a match completes
-                </span>
+          {/* Tab 2: Game Rules */}
+          {activeTab === "game" && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Default Match Duration
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Countdown timer length per match
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDefaultGameDuration((d) => Math.max(5, d - 5))
+                    }
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="w-16 text-center font-bold text-sm text-slate-900 dark:text-zinc-100 font-mono">
+                    {defaultGameDuration} min
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDefaultGameDuration((d) => Math.min(60, d + 5))
+                    }
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-200 font-bold cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-              <Select
-                value={defaultPostGameAction}
-                onChange={(e) =>
-                  setDefaultPostGameAction(e.target.value as any)
-                }
-                containerClassName="w-full sm:w-56"
-                options={[
-                  { value: "waiting-pool", label: "Return to Waiting Pool" },
-                  { value: "requeue", label: "Automatically Requeue" },
-                  { value: "resting", label: "Mark as Resting" },
-                ]}
-              />
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Minimum Rest Between Games
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Prevents player from being auto-queued right after finishing
-                </span>
-              </div>
-              <Select
-                value={minimumRestGames}
-                onChange={(e) => setMinimumRestGames(Number(e.target.value))}
-                containerClassName="w-full sm:w-56"
-                options={[
-                  { value: 0, label: "None (Continuous play)" },
-                  { value: 1, label: "1 game rest" },
-                  { value: 2, label: "2 games rest" },
-                ]}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Auto-Assign Next Group
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Automatically start Queue #1 when a court becomes open
-                </span>
-              </div>
-              <Checkbox
-                checked={autoAssignNextGroup}
-                onCheckedChange={setAutoAssignNextGroup}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Courts */}
-        {activeTab === "courts" && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                Courts List ({courts.length})
-              </span>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Input
-                  value={newCourtNameInput}
-                  onChange={(e) => setNewCourtNameInput(e.target.value)}
-                  placeholder="e.g. Center Court"
-                  containerClassName="flex-1 sm:w-44"
-                  className="!py-1 text-base sm:text-xs"
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Warning Before End
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    When timer turns amber and pulses &ldquo;Ending Soon&rdquo;
+                  </span>
+                </div>
+                <Select
+                  value={warningTimeSeconds}
+                  onChange={(e) =>
+                    setWarningTimeSeconds(Number(e.target.value))
+                  }
+                  containerClassName="w-full sm:w-48"
+                  options={[
+                    { value: 60, label: "1 minute" },
+                    { value: 120, label: "2 minutes (Default)" },
+                    { value: 180, label: "3 minutes" },
+                  ]}
                 />
-                <button
-                  type="button"
-                  onClick={handleAddNewCourt}
-                  className="px-3 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition cursor-pointer shrink-0"
-                >
-                  + Add Court
-                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Timer Direction
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Countdown (Remaining) or Count-up (Elapsed time)
+                  </span>
+                </div>
+                <Select
+                  value={timerDirection}
+                  onChange={(e) =>
+                    setTimerDirection(e.target.value as TimerDirection)
+                  }
+                  containerClassName="w-full sm:w-56"
+                  options={[
+                    { value: "countdown", label: "Countdown (15:00 → 00:00)" },
+                    { value: "countup", label: "Count-up (00:00 → 15:00)" },
+                  ]}
+                />
+              </div>
+
+              <div className="py-2 space-y-2">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                  Overtime Behavior
+                </span>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
+                    <input
+                      type="radio"
+                      name="overtime"
+                      checked={allowOvertime}
+                      onChange={() => setAllowOvertime(true)}
+                      className="text-emerald-500 cursor-pointer"
+                    />
+                    <span>
+                      <strong>Allow Overtime (Recommended)</strong> &bull; Shows
+                      +MM:SS elapsed until organizer ends game
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
+                    <input
+                      type="radio"
+                      name="overtime"
+                      checked={!allowOvertime}
+                      onChange={() => setAllowOvertime(false)}
+                      className="text-emerald-500 cursor-pointer"
+                    />
+                    <span>
+                      <strong>Auto-Prompt Game End</strong> &bull; Triggers
+                      end-game dialog immediately at 00:00
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
-              {courts.map((court) => (
-                <div
-                  key={court.id}
-                  className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 gap-2.5 transition hover:border-slate-300 dark:hover:border-zinc-700"
-                >
-                  {editingCourtId === court.id ? (
-                    <div className="flex flex-col gap-2 flex-1">
-                      <Input
-                        value={tempCourtName}
-                        onChange={(e) => setTempCourtName(e.target.value)}
-                        containerClassName="w-full"
-                        className="!py-1 text-base sm:text-xs bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleSaveCourtName(court.id);
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            setEditingCourtId(null);
-                          }
-                        }}
-                      />
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setEditingCourtId(null)}
-                          className="px-2.5 py-1 text-xs bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-medium cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveCourtName(court.id)}
-                          className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium cursor-pointer transition"
-                        >
-                          Save
-                        </button>
-                      </div>
+          {/* Tab: Scoring Engine */}
+          {activeTab === "scoring" && (
+            <div className="space-y-4">
+              {/* Enable Scoring Master Switch */}
+              <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Enable Match Scoring
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Displays live scoreboard and controls on active court cards
+                  </span>
+                </div>
+                <Checkbox
+                  checked={scoringEnabled}
+                  onCheckedChange={setScoringEnabled}
+                />
+              </div>
+
+              {/* Scoring Mode Selection */}
+              <div>
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-1.5 uppercase tracking-wider">
+                  Scoring Mode
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setScoringMode("manual")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      scoringMode === "manual"
+                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-1">Manual</span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed block">
+                      Large [+] and [-] score buttons. Operator increments score
+                      without tracking server sequence.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setScoringMode("side-out")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      scoringMode === "side-out"
+                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold">Side-Out</span>
+                      <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold">
+                        USA Pickleball
+                      </span>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span
-                          className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate"
-                          title={court.name}
-                        >
-                          {court.name}
-                        </span>
-                        <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded capitalize border shrink-0 ${
-                            court.status === "playing"
-                              ? "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/30"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
-                          }`}
-                        >
-                          {court.status}
-                        </span>
-                      </div>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed block">
+                      Official rules: awards points only to serving team. Tracks
+                      Server 1 / Server 2 and 0-0-2 start.
+                    </span>
+                  </button>
 
-                      <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200/60 dark:border-zinc-800/60">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingCourtId(court.id);
-                            setTempCourtName(court.name);
+                  <button
+                    type="button"
+                    onClick={() => setScoringMode("rally")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      scoringMode === "rally"
+                        ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-1">
+                      Rally Scoring
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed block">
+                      Every rally awards a point to the winner. Serve switches
+                      to winner on receiving team point.
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Target Score */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Target Score
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Points required to win match
+                  </span>
+                </div>
+                <Select
+                  value={targetScore}
+                  onChange={(e) => setTargetScore(Number(e.target.value))}
+                  containerClassName="w-full sm:w-48"
+                  options={[
+                    { value: 11, label: "11 pts (Standard)" },
+                    { value: 15, label: "15 pts" },
+                    { value: 21, label: "21 pts" },
+                    { value: 7, label: "7 pts (Speed)" },
+                  ]}
+                />
+              </div>
+
+              {/* Win By Margin */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Win By Margin
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Lead required to conclude game
+                  </span>
+                </div>
+                <Select
+                  value={winBy}
+                  onChange={(e) => setWinBy(Number(e.target.value))}
+                  containerClassName="w-full sm:w-48"
+                  options={[
+                    { value: 2, label: "Win by 2 (Official)" },
+                    { value: 1, label: "Win by 1 (Sudden Death)" },
+                  ]}
+                />
+              </div>
+
+              {/* Serving Team Visibility */}
+              <div className="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Show Serving Team Indicator
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Displays server indicator and 3-part score call on active
+                    court
+                  </span>
+                </div>
+                <Checkbox
+                  checked={showServingTeam}
+                  onCheckedChange={setShowServingTeam}
+                />
+              </div>
+
+              {/* Game Ending Determination */}
+              <div className="space-y-2 py-1">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                  Game Ending Condition
+                </span>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
+                    <input
+                      type="radio"
+                      name="gameEndingRule"
+                      checked={gameEndingRule === "both"}
+                      onChange={() => setGameEndingRule("both")}
+                      className="text-emerald-500 cursor-pointer"
+                    />
+                    <span>
+                      <strong>Timer or Score (Recommended)</strong> &bull;
+                      Whichever condition is reached first
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
+                    <input
+                      type="radio"
+                      name="gameEndingRule"
+                      checked={gameEndingRule === "score"}
+                      onChange={() => setGameEndingRule("score")}
+                      className="text-emerald-500 cursor-pointer"
+                    />
+                    <span>
+                      <strong>Score Only</strong> &bull; Game continues until a
+                      team achieves target score
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 dark:text-zinc-300">
+                    <input
+                      type="radio"
+                      name="gameEndingRule"
+                      checked={gameEndingRule === "timer"}
+                      onChange={() => setGameEndingRule("timer")}
+                      className="text-emerald-500 cursor-pointer"
+                    />
+                    <span>
+                      <strong>Timer Only</strong> &bull; Rotation timer strictly
+                      determines when the match ends
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Queue & Rotation */}
+          {activeTab === "queue" && (
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-1.5 uppercase tracking-wider">
+                  Queue Mode
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQueueMode("fifo")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      queueMode === "fifo"
+                        ? "bg-slate-100 dark:bg-zinc-800 border-emerald-500 text-slate-900 dark:text-zinc-100"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-0.5">
+                      First-Come, First-Served
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Normal FIFO rotation in order of queue entry
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQueueMode("skill-balanced")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      queueMode === "skill-balanced"
+                        ? "bg-slate-100 dark:bg-zinc-800 border-emerald-500 text-slate-900 dark:text-zinc-100"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-0.5">
+                      Skill Balanced Mode
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Optimizes group selection to match similar skill ratings
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Default Post-Match Action
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Standard workflow when a match completes
+                  </span>
+                </div>
+                <Select
+                  value={defaultPostGameAction}
+                  onChange={(e) =>
+                    setDefaultPostGameAction(e.target.value as any)
+                  }
+                  containerClassName="w-full sm:w-56"
+                  options={[
+                    { value: "waiting-pool", label: "Return to Waiting Pool" },
+                    { value: "requeue", label: "Automatically Requeue" },
+                    { value: "resting", label: "Mark as Resting" },
+                  ]}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Minimum Rest Between Games
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Prevents player from being auto-queued right after finishing
+                  </span>
+                </div>
+                <Select
+                  value={minimumRestGames}
+                  onChange={(e) => setMinimumRestGames(Number(e.target.value))}
+                  containerClassName="w-full sm:w-56"
+                  options={[
+                    { value: 0, label: "None (Continuous play)" },
+                    { value: 1, label: "1 game rest" },
+                    { value: 2, label: "2 games rest" },
+                  ]}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Auto-Assign Next Group
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Automatically start Queue #1 when a court becomes open
+                  </span>
+                </div>
+                <Checkbox
+                  checked={autoAssignNextGroup}
+                  onCheckedChange={setAutoAssignNextGroup}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Courts */}
+          {activeTab === "courts" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
+                  Courts List ({courts.length})
+                </span>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Input
+                    value={newCourtNameInput}
+                    onChange={(e) => setNewCourtNameInput(e.target.value)}
+                    placeholder="e.g. Center Court"
+                    containerClassName="flex-1 sm:w-44"
+                    className="!py-1 text-base sm:text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddNewCourt}
+                    className="px-3 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition cursor-pointer shrink-0"
+                  >
+                    + Add Court
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                {courts.map((court) => (
+                  <div
+                    key={court.id}
+                    className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 gap-2.5 transition hover:border-slate-300 dark:hover:border-zinc-700"
+                  >
+                    {editingCourtId === court.id ? (
+                      <div className="flex flex-col gap-2 flex-1">
+                        <Input
+                          value={tempCourtName}
+                          onChange={(e) => setTempCourtName(e.target.value)}
+                          containerClassName="w-full"
+                          className="!py-1 text-base sm:text-xs bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleSaveCourtName(court.id);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setEditingCourtId(null);
+                            }
                           }}
-                          className="px-2.5 py-1 text-xs font-medium bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 rounded-lg transition cursor-pointer"
-                        >
-                          Rename
-                        </button>
-                        {court.status === "available" && courts.length > 1 && (
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => removeCourt(court.id)}
-                            className="px-2.5 py-1 text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-zinc-800 dark:hover:bg-rose-950/60 dark:text-rose-400 rounded-lg transition cursor-pointer"
+                            onClick={() => setEditingCourtId(null)}
+                            className="px-2.5 py-1 text-xs bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-medium cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition"
                           >
-                            Delete
+                            Cancel
                           </button>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => handleSaveCourtName(court.id)}
+                            className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium cursor-pointer transition"
+                          >
+                            Save
+                          </button>
+                        </div>
                       </div>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <span
+                            className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate"
+                            title={court.name}
+                          >
+                            {court.name}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded capitalize border shrink-0 ${
+                              court.status === "playing"
+                                ? "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/30"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30"
+                            }`}
+                          >
+                            {court.status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200/60 dark:border-zinc-800/60">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCourtId(court.id);
+                              setTempCourtName(court.name);
+                            }}
+                            className="px-2.5 py-1 text-xs font-medium bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 rounded-lg transition cursor-pointer"
+                          >
+                            Rename
+                          </button>
+                          {court.status === "available" &&
+                            courts.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeCourt(court.id)}
+                                className="px-2.5 py-1 text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-zinc-800 dark:hover:bg-rose-950/60 dark:text-rose-400 rounded-lg transition cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                            )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 5: Notifications */}
+          {activeTab === "notifications" && (
+            <div className="space-y-4">
+              {/* Sound Profile Selector */}
+              <div>
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-1.5 uppercase tracking-wider">
+                  Sound Profile
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSoundProfile("minimal")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      soundProfile === "minimal"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-0.5">
+                      Minimal
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Venue Recommended: Timers &amp; assignments only
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSoundProfile("standard")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      soundProfile === "standard"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-0.5">
+                      Standard
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Full audio: UI clicks, queue events, &amp; timer alerts
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSoundProfile("silent")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      soundProfile === "silent"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
+                        : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    <span className="text-xs font-bold block mb-0.5">
+                      Silent
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Completely quiet: All audio alerts muted
+                    </span>
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 5: Notifications */}
-        {activeTab === "notifications" && (
-          <div className="space-y-4">
-            {/* Sound Profile Selector */}
-            <div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-1.5 uppercase tracking-wider">
-                Sound Profile
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSoundProfile("minimal")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                    soundProfile === "minimal"
-                      ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
-                      : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
-                  }`}
-                >
-                  <span className="text-xs font-bold block mb-0.5">
-                    Minimal
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Venue Recommended: Timers &amp; assignments only
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSoundProfile("standard")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                    soundProfile === "standard"
-                      ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
-                      : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
-                  }`}
-                >
-                  <span className="text-xs font-bold block mb-0.5">
-                    Standard
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Full audio: UI clicks, queue events, &amp; timer alerts
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSoundProfile("silent")}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                    soundProfile === "silent"
-                      ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-slate-900 dark:text-zinc-100 ring-1 ring-emerald-500"
-                      : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400"
-                  }`}
-                >
-                  <span className="text-xs font-bold block mb-0.5">Silent</span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Completely quiet: All audio alerts muted
-                  </span>
-                </button>
               </div>
-            </div>
 
-            {/* Master Audio Toggle */}
-            <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Master Sound
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Enable or disable all procedural sound effects
-                </span>
-              </div>
-              <Checkbox
-                checked={soundEnabled}
-                onCheckedChange={setSoundEnabled}
-              />
-            </div>
-
-            {/* Granular Toggles */}
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-700 dark:text-zinc-300">
-                  UI Micro-Interactions (Button &amp; card taps)
-                </span>
+              {/* Master Audio Toggle */}
+              <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Master Sound
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Enable or disable all procedural sound effects
+                  </span>
+                </div>
                 <Checkbox
-                  disabled={
-                    soundProfile === "minimal" || soundProfile === "silent"
-                  }
-                  checked={uiSounds && soundProfile === "standard"}
-                  onCheckedChange={setUiSounds}
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-700 dark:text-zinc-300">
-                  Queue &amp; Court Notifications (Assignment success, group
-                  ready)
-                </span>
-                <Checkbox
-                  disabled={soundProfile === "silent"}
-                  checked={queueSounds && soundProfile !== "silent"}
-                  onCheckedChange={setQueueSounds}
-                />
+              {/* Granular Toggles */}
+              <div className="space-y-2.5 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 dark:text-zinc-300">
+                    UI Micro-Interactions (Button &amp; card taps)
+                  </span>
+                  <Checkbox
+                    disabled={
+                      soundProfile === "minimal" || soundProfile === "silent"
+                    }
+                    checked={uiSounds && soundProfile === "standard"}
+                    onCheckedChange={setUiSounds}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 dark:text-zinc-300">
+                    Queue &amp; Court Notifications (Assignment success, group
+                    ready)
+                  </span>
+                  <Checkbox
+                    disabled={soundProfile === "silent"}
+                    checked={queueSounds && soundProfile !== "silent"}
+                    onCheckedChange={setQueueSounds}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 dark:text-zinc-300">
+                    Timer Warnings (2m chime, 30s beep, &amp; Time&apos;s Up
+                    buzzer)
+                  </span>
+                  <Checkbox
+                    disabled={soundProfile === "silent"}
+                    checked={timerSounds && soundProfile !== "silent"}
+                    onCheckedChange={setTimerSounds}
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-700 dark:text-zinc-300">
-                  Timer Warnings (2m chime, 30s beep, &amp; Time&apos;s Up
-                  buzzer)
-                </span>
-                <Checkbox
-                  disabled={soundProfile === "silent"}
-                  checked={timerSounds && soundProfile !== "silent"}
-                  onCheckedChange={setTimerSounds}
-                />
-              </div>
-            </div>
-
-            {/* Volume Slider & Test Button */}
-            <div className="py-3 border-t border-slate-100 dark:border-zinc-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
-                  Alert Volume ({Math.round(soundVolume * 100)}%)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => playCourtEndBuzzer()}
-                  className="px-3 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 transition cursor-pointer"
-                >
-                  Test Sound
-                </button>
-              </div>
-              <input
-                type="range"
-                min="0.1"
-                max="1"
-                step="0.05"
-                value={soundVolume}
-                onChange={(e) => setSoundVolume(Number(e.target.value))}
-                className="w-full accent-emerald-500 cursor-pointer"
-              />
-            </div>
-
-            {/* Device Vibration Toggle */}
-            <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-zinc-800">
-              <div>
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
-                  Device Vibration
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Haptic pulse on mobile/tablet during 2m warning and game
-                  finish
-                </span>
-              </div>
-              <Checkbox
-                checked={vibrationEnabled}
-                onCheckedChange={setVibrationEnabled}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Tab 6: Data & Backup */}
-        {activeTab === "data" && (
-          <div className="space-y-4">
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Save a snapshot of all players, courts, queues, and game history
-              to your computer.
-            </p>
-
-            {importStatus && (
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-medium">
-                {importStatus}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleExport}
-                className="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 dark:hover:bg-zinc-900 text-left transition cursor-pointer"
-              >
-                <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 block mb-0.5">
-                  Export Backup JSON
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Download session data as a .json file
-                </span>
-              </button>
-
-              <label className="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 dark:hover:bg-zinc-900 text-left transition cursor-pointer block">
-                <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 block mb-0.5">
-                  Import Backup JSON
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  Upload and restore a previous backup
-                </span>
+              {/* Volume Slider & Test Button */}
+              <div className="py-3 border-t border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                    Alert Volume ({Math.round(soundVolume * 100)}%)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => playCourtEndBuzzer()}
+                    className="px-3 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 transition cursor-pointer"
+                  >
+                    Test Sound
+                  </button>
+                </div>
                 <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportFile}
-                  className="hidden"
+                  type="range"
+                  min="0.1"
+                  max="1"
+                  step="0.05"
+                  value={soundVolume}
+                  onChange={(e) => setSoundVolume(Number(e.target.value))}
+                  className="w-full accent-emerald-500 cursor-pointer"
                 />
-              </label>
-            </div>
+              </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-zinc-800">
-              <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider block mb-2">
-                Danger Zone
-              </span>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setConfirmAction({
-                      isOpen: true,
-                      title: "Reset Current Session?",
-                      message:
-                        "Active matches and queue groups will be cleared, and all players will return to the waiting pool. Session history will be preserved.",
-                      confirmText: "Reset Session",
-                      variant: "warning",
-                      action: () => {
-                        resetSession();
-                        onClose();
-                      },
-                    });
-                  }}
-                  className="text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/60 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs"
-                >
-                  Reset Current Session
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setConfirmAction({
-                      isOpen: true,
-                      title: "Clear All Data?",
-                      message:
-                        "WARNING: This will permanently delete ALL players, matches, queues, and session statistics. This action cannot be undone.",
-                      confirmText: "Clear Everything",
-                      variant: "danger",
-                      action: () => {
-                        clearAllData();
-                        onClose();
-                      },
-                    });
-                  }}
-                  className="text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs"
-                >
-                  Clear All Data
-                </Button>
+              {/* Device Vibration Toggle */}
+              <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-zinc-800">
+                <div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">
+                    Device Vibration
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Haptic pulse on mobile/tablet during 2m warning and game
+                    finish
+                  </span>
+                </div>
+                <Checkbox
+                  checked={vibrationEnabled}
+                  onCheckedChange={setVibrationEnabled}
+                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Tab 7: Help & Shortcuts */}
-        {activeTab === "help" && (
-          <div className="space-y-4">
-            <div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-2 uppercase tracking-wider">
-                Keyboard Shortcuts
-              </span>
-              <div className="border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden text-xs">
-                <div className="grid grid-cols-2 p-2.5 bg-slate-50 dark:bg-zinc-950 font-semibold text-slate-500 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800">
-                  <span>Key</span>
-                  <span>Action</span>
+          {/* Tab 6: Data & Backup */}
+          {activeTab === "data" && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Save a snapshot of all players, courts, queues, and game history
+                to your computer.
+              </p>
+
+              {importStatus && (
+                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-medium">
+                  {importStatus}
                 </div>
-                <div className="divide-y divide-slate-100 dark:divide-zinc-800/80">
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
-                      N
-                    </span>
-                    <span className="text-slate-600 dark:text-zinc-300">
-                      Open Add Player modal
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
-                      ?
-                    </span>
-                    <span className="text-slate-600 dark:text-zinc-300">
-                      Open Settings &amp; Shortcuts
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
-                      Esc
-                    </span>
-                    <span className="text-slate-600 dark:text-zinc-300">
-                      Close open modal / dialog
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
-                      Enter
-                    </span>
-                    <span className="text-slate-600 dark:text-zinc-300">
-                      Submit new player name
-                    </span>
-                  </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 dark:hover:bg-zinc-900 text-left transition cursor-pointer"
+                >
+                  <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 block mb-0.5">
+                    Export Backup JSON
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Download session data as a .json file
+                  </span>
+                </button>
+
+                <label className="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 dark:hover:bg-zinc-900 text-left transition cursor-pointer block">
+                  <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 block mb-0.5">
+                    Import Backup JSON
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Upload and restore a previous backup
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportFile}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-zinc-800">
+                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider block mb-2">
+                  Danger Zone
+                </span>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setConfirmAction({
+                        isOpen: true,
+                        title: "Reset Current Session?",
+                        message:
+                          "Active matches and queue groups will be cleared, and all players will return to the waiting pool. Session history will be preserved.",
+                        confirmText: "Reset Session",
+                        variant: "warning",
+                        action: () => {
+                          resetSession();
+                          onClose();
+                        },
+                      });
+                    }}
+                    className="text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/60 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs"
+                  >
+                    Reset Current Session
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setConfirmAction({
+                        isOpen: true,
+                        title: "Clear All Data?",
+                        message:
+                          "WARNING: This will permanently delete ALL players, matches, queues, and session statistics. This action cannot be undone.",
+                        confirmText: "Clear Everything",
+                        variant: "danger",
+                        action: () => {
+                          clearAllData();
+                          onClose();
+                        },
+                      });
+                    }}
+                    className="text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs"
+                  >
+                    Clear All Data
+                  </Button>
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="pt-2">
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-2 uppercase tracking-wider">
-                Interactive Walkthrough
-              </span>
-              <button
-                type="button"
-                onClick={handleReplayTutorial}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
-              >
-                Replay Tutorial Tour
-              </button>
+          {/* Tab 7: Help & Shortcuts */}
+          {activeTab === "help" && (
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-2 uppercase tracking-wider">
+                  Keyboard Shortcuts
+                </span>
+                <div className="border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden text-xs">
+                  <div className="grid grid-cols-2 p-2.5 bg-slate-50 dark:bg-zinc-950 font-semibold text-slate-500 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800">
+                    <span>Key</span>
+                    <span>Action</span>
+                  </div>
+                  <div className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                    <div className="grid grid-cols-2 p-2.5">
+                      <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                        N
+                      </span>
+                      <span className="text-slate-600 dark:text-zinc-300">
+                        Open Add Player modal
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2.5">
+                      <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                        ?
+                      </span>
+                      <span className="text-slate-600 dark:text-zinc-300">
+                        Open Settings &amp; Shortcuts
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2.5">
+                      <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                        Esc
+                      </span>
+                      <span className="text-slate-600 dark:text-zinc-300">
+                        Close open modal / dialog
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2.5">
+                      <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                        Enter
+                      </span>
+                      <span className="text-slate-600 dark:text-zinc-300">
+                        Submit new player name
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block mb-2 uppercase tracking-wider">
+                  Interactive Walkthrough
+                </span>
+                <button
+                  type="button"
+                  onClick={handleReplayTutorial}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-xs cursor-pointer"
+                >
+                  Replay Tutorial Tour
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-400 dark:text-zinc-500">
+                PickleQueue v1.1.0 &bull; LocalStorage Prototype &bull; Zero
+                Backend Needed
+              </div>
             </div>
+          )}
+        </div>
+      </Modal>
 
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-400 dark:text-zinc-500">
-              PickleQueue v1.1.0 &bull; LocalStorage Prototype &bull; Zero
-              Backend Needed
-            </div>
-          </div>
-        )}
-      </div>
-    </Modal>
-
-    {confirmAction && (
-      <ConfirmAlert
-        isOpen={confirmAction.isOpen}
-        onClose={() => setConfirmAction(null)}
-        onConfirm={() => {
-          confirmAction.action();
-          setConfirmAction(null);
-        }}
-        title={confirmAction.title}
-        message={confirmAction.message}
-        confirmText={confirmAction.confirmText}
-        variant={confirmAction.variant}
-      />
-    )}
-  </>
+      {confirmAction && (
+        <ConfirmAlert
+          isOpen={confirmAction.isOpen}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={() => {
+            confirmAction.action();
+            setConfirmAction(null);
+          }}
+          title={confirmAction.title}
+          message={confirmAction.message}
+          confirmText={confirmAction.confirmText}
+          variant={confirmAction.variant}
+        />
+      )}
+    </>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/use-lock-body-scroll';
 
 export interface ModalProps {
@@ -41,7 +42,7 @@ export interface ModalProps {
   /** Alias for closeOnOutsideClick */
   closeOnBackdropClick?: boolean;
   /**
-   * Whether to show the top-right "✕" close button.
+   * Whether to show the top-right close button.
    * Defaults to true.
    */
   showCloseButton?: boolean;
@@ -151,9 +152,9 @@ export const Modal: React.FC<ModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-lg p-1.5 sm:px-2 sm:py-1 rounded-lg font-bold cursor-pointer transition"
+              className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 p-1.5 rounded-lg cursor-pointer transition flex items-center justify-center"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
