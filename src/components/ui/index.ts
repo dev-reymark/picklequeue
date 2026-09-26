@@ -14,3 +14,5 @@ export * from './Chip';
 export * from './ConfirmAlert';
 export * from './Avatar';
 export * from './Drawer';
+export * from './Pagination';
+export * from './SearchInput';

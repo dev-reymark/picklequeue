@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Users, Search, Pencil, Trash2, Check } from "lucide-react";
+import { Users, Search, Pencil, Trash2, Check, BarChart2 } from "lucide-react";
 import { Player, SkillLevel, SKILL_CONFIG } from "@/types";
 import { usePickleballStore } from "@/store/pickleball-store";
+import { PlayerProfileModal } from "@/components/admin/PlayerProfileModal";
 import {
   Modal,
   Tabs,
@@ -41,6 +42,7 @@ export const PlayerListModal: React.FC<PlayerListModalProps> = ({
   const [editName, setEditName] = useState("");
   const [editSkill, setEditSkill] = useState<SkillLevel>("beginner");
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
+  const [inspectedPlayer, setInspectedPlayer] = useState<Player | null>(null);
 
   const waitingCount = players.filter(
     (p) => p.status === "waiting" || (p.status as any) === "available",
@@ -272,6 +274,15 @@ export const PlayerListModal: React.FC<PlayerListModalProps> = ({
 
                   <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                     <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setInspectedPlayer(player)}
+                      className="text-xs text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-950/40"
+                    >
+                      <BarChart2 className="w-3 h-3 mr-1" />
+                      Stats
+                    </Button>
+                    <Button
                       variant="secondary"
                       size="xs"
                       onClick={() => startEdit(player)}
@@ -319,6 +330,12 @@ export const PlayerListModal: React.FC<PlayerListModalProps> = ({
       }
       confirmText="Delete Player"
       variant="danger"
+    />
+
+    <PlayerProfileModal
+      player={inspectedPlayer}
+      isOpen={Boolean(inspectedPlayer)}
+      onClose={() => setInspectedPlayer(null)}
     />
   </>
 );

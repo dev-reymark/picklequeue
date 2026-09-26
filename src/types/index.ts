@@ -20,6 +20,45 @@ export interface Player {
   createdAt: number;
   gamesPlayed: number;
   restGamesRemaining?: number;
+  phone?: string;
+  notes?: string;
+  wins?: number;
+  losses?: number;
+  streak?: number;
+  pointsScored?: number;
+  pointsConceded?: number;
+  checkInMethod?: 'admin' | 'qr';
+}
+
+export interface PlayerLeaderboardEntry {
+  rank: number;
+  player: Player;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number; // 0 to 100
+  streak: number;
+  pointsScored: number;
+  pointsConceded: number;
+  pointDiff: number;
+}
+
+export type LeaderboardSortOption = 'wins' | 'winRate' | 'matches' | 'streak' | 'pointDiff';
+
+export interface LeaderboardFilterOptions {
+  sortBy?: LeaderboardSortOption;
+  skillLevel?: SkillLevel | 'all';
+  minGames?: number;
+  search?: string;
+}
+
+export interface VenueLeaderboardHighlights {
+  topWinner: PlayerLeaderboardEntry | null;
+  highestWinRate: PlayerLeaderboardEntry | null;
+  longestStreak: PlayerLeaderboardEntry | null;
+  mostActive: PlayerLeaderboardEntry | null;
+  totalGamesRecorded: number;
+  totalPointsScored: number;
 }
 
 export type MatchBalanceStatus = 'balanced' | 'slightly-unbalanced' | 'unbalanced';
@@ -150,6 +189,35 @@ export type PostGameAction = 'waiting-pool' | 'requeue' | 'resting' | 'remove';
 
 export type TimerDirection = 'countdown' | 'countup';
 
+export type PlanTier = 'basic' | 'standard' | 'premium';
+
+export interface Reservation {
+  id: string;
+  courtId: string;
+  courtName: string;
+  reservedFor: string;
+  contactPhone?: string;
+  startTime: string; // e.g. "14:00"
+  endTime: string;   // e.g. "15:00"
+  date: string;      // e.g. "2026-09-26"
+  playerNames: string[];
+  status: 'confirmed' | 'active' | 'completed' | 'cancelled';
+  notes?: string;
+  createdAt: number;
+}
+
+export interface PlayerNotification {
+  id: string;
+  playerId?: string;
+  playerName: string;
+  courtName?: string;
+  type: 'court_ready' | 'queue_reminder' | 'game_warning' | 'reservation_alert';
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
 export interface Settings {
   venueName: string;
   sessionName: string;
@@ -179,6 +247,14 @@ export interface Settings {
   winBy: number;
   showServingTeam: boolean;
   gameEndingRule: GameEndingRule;
+  // Tier & Branding Configurations
+  tier: PlanTier;
+  brandAccent: 'emerald' | 'amber' | 'cyan' | 'purple' | 'rose';
+  marqueeMessage: string;
+  wifiName?: string;
+  wifiPassword?: string;
+  allowDirectQueueJoin: boolean;
+  realtimeSyncEnabled: boolean;
 }
 
 export const SKILL_RATINGS: Record<SkillLevel, number> = {
@@ -242,3 +318,18 @@ export const SKILL_CONFIG: Record<
     solidBg: 'bg-amber-600 text-white',
   },
 };
+
+export type UserRole = 'admin' | 'player';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  password?: string;
+  venueName?: string;
+  skillLevel?: SkillLevel;
+  avatar?: string;
+  createdAt: number;
+}
+

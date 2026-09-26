@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, UserPlus, Sparkles, Coffee } from 'lucide-react';
+import { Users, UserPlus, Wand2, Coffee } from 'lucide-react';
 import { Player, PlayerStatus } from '@/types';
 import { usePickleballStore } from '@/store/pickleball-store';
 import { playSound } from '@/lib/sound';
@@ -145,7 +145,7 @@ export const WaitingPool: React.FC<WaitingPoolProps> = ({
                   onClick={handleAutoGroup}
                   className="text-xs border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                 >
-                  <Sparkles className="w-3.5 h-3.5 mr-1 shrink-0" />
+                  <Wand2 className="w-3.5 h-3.5 mr-1 shrink-0" />
                   {settings.queueMode === 'fifo' ? `Next FIFO (${targetGroupSize})` : `Auto-Balance (${targetGroupSize})`}
                 </Button>
               )}

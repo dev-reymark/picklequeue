@@ -12,11 +12,15 @@ import {
   SessionInfo,
   Game,
   Team,
+  PlanTier,
+  Reservation,
+  PlayerNotification,
 } from '@/types';
 import { calculateBestTeams } from '@/lib/matchmaking';
 import { generateId } from '@/lib/utils';
 import { getSampleSessionData } from '@/lib/demo-data';
 import { playSound, playSoundEvent } from '@/lib/sound';
+import { tabSyncBus } from '@/lib/sync';
 import {
   applyGameAction,
   undoGameAction,
@@ -29,6 +33,8 @@ export interface PickleballStoreState {
   queue: QueueGroup[];
   games: GameRecord[];
   activeGames: Record<string, Game>;
+  reservations: Reservation[];
+  notifications: PlayerNotification[];
   session: SessionInfo;
   settings: Settings;
   isHydrated: boolean;
@@ -42,10 +48,24 @@ export interface PickleballStoreState {
   skipTutorial: () => void;
   finishTutorial: () => void;
 
+  setPlanTier: (tier: PlanTier) => void;
+
   addPlayer: (name: string, skillLevel: SkillLevel) => Player;
   editPlayer: (id: string, updates: Partial<Player>) => void;
   deletePlayer: (id: string) => void;
   setPlayerStatus: (id: string, status: PlayerStatus) => void;
+  joinQueueDirect: (info: { name: string; skillLevel: SkillLevel; phone?: string; notes?: string; autoQueue?: boolean }) => { player: Player };
+
+  // Reservations
+  addReservation: (res: Omit<Reservation, 'id' | 'createdAt'>) => Reservation;
+  updateReservation: (id: string, updates: Partial<Reservation>) => void;
+  cancelReservation: (id: string) => void;
+  checkInReservation: (id: string) => void;
+
+  // Notifications
+  addNotification: (notif: Omit<PlayerNotification, 'id' | 'timestamp' | 'read'>) => PlayerNotification;
+  markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
 
   createQueueGroup: (playerIds: string[]) => void;
   removeQueueGroup: (groupId: string) => void;
@@ -106,6 +126,13 @@ const DEFAULT_SETTINGS: Settings = {
   winBy: 2,
   showServingTeam: true,
   gameEndingRule: 'both',
+  tier: 'premium',
+  brandAccent: 'emerald',
+  marqueeMessage: 'Welcome to Smash Point Pickleball • Games are 15 minutes • Check your court number when called • Good luck & have fun!',
+  wifiName: 'SmashPoint-Guest',
+  wifiPassword: 'pickleballhero',
+  allowDirectQueueJoin: true,
+  realtimeSyncEnabled: true,
 };
 
 function generateInitialCourts(count: number): Court[] {
@@ -125,6 +152,8 @@ export const usePickleballStore = create<PickleballStoreState>()(
       queue: [],
       games: [],
       activeGames: {},
+      reservations: [],
+      notifications: [],
       session: {
         id: generateId(),
         venueName: 'Smash Point Pickleball',
@@ -136,6 +165,13 @@ export const usePickleballStore = create<PickleballStoreState>()(
       tutorialStep: null,
 
       setHydrated: (val: boolean) => set({ isHydrated: val }),
+
+      setPlanTier: (tier: PlanTier) => {
+        set((state) => ({
+          settings: { ...state.settings, tier },
+        }));
+        tabSyncBus.notifyStateChanged();
+      },
 
       startTutorial: () => set({ tutorialStep: 0 }),
       nextTutorialStep: () => {
@@ -228,6 +264,190 @@ export const usePickleballStore = create<PickleballStoreState>()(
 
           return { players, queue, courts };
         });
+        tabSyncBus.notifyStateChanged();
+      },
+
+      joinQueueDirect: (info: { name: string; skillLevel: SkillLevel; phone?: string; notes?: string; autoQueue?: boolean }) => {
+        const newPlayer: Player = {
+          id: generateId(),
+          name: info.name.trim(),
+          skillLevel: info.skillLevel,
+          status: 'waiting',
+          createdAt: Date.now(),
+          gamesPlayed: 0,
+          phone: info.phone?.trim(),
+          notes: info.notes?.trim(),
+          checkInMethod: 'qr',
+        };
+
+        set((state) => ({
+          players: [...state.players, newPlayer],
+        }));
+
+        if (info.autoQueue) {
+          const state = get();
+          const targetSize = state.settings.playersPerGroup || 4;
+          const waitingPlayers = state.players.filter((p) => p.status === 'waiting');
+          if (waitingPlayers.length >= targetSize) {
+            const groupIds = waitingPlayers.slice(0, targetSize).map((p) => p.id);
+            get().createQueueGroup(groupIds);
+          }
+        }
+
+        get().addNotification({
+          playerId: newPlayer.id,
+          playerName: newPlayer.name,
+          type: 'queue_reminder',
+          title: 'QR Code Check-in',
+          message: `${newPlayer.name} scanned QR code and joined the session queue.`,
+        });
+
+        tabSyncBus.notifyStateChanged();
+        return { player: newPlayer };
+      },
+
+      addReservation: (res: Omit<Reservation, 'id' | 'createdAt'>) => {
+        const newRes: Reservation = {
+          ...res,
+          id: generateId(),
+          createdAt: Date.now(),
+        };
+
+        set((state) => ({
+          reservations: [newRes, ...state.reservations],
+        }));
+
+        get().addNotification({
+          courtName: res.courtName,
+          playerName: res.reservedFor,
+          type: 'reservation_alert',
+          title: 'New Court Reservation',
+          message: `Reserved ${res.courtName} for "${res.reservedFor}" (${res.startTime} - ${res.endTime})`,
+        });
+
+        tabSyncBus.notifyStateChanged();
+        return newRes;
+      },
+
+      updateReservation: (id: string, updates: Partial<Reservation>) => {
+        set((state) => ({
+          reservations: state.reservations.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        }));
+        tabSyncBus.notifyStateChanged();
+      },
+
+      cancelReservation: (id: string) => {
+        set((state) => ({
+          reservations: state.reservations.map((r) =>
+            r.id === id ? { ...r, status: 'cancelled' as const } : r
+          ),
+        }));
+        tabSyncBus.notifyStateChanged();
+      },
+
+      checkInReservation: (id: string) => {
+        const state = get();
+        const res = state.reservations.find((r) => r.id === id);
+        if (!res) return;
+
+        const court = state.courts.find((c) => c.id === res.courtId);
+        if (!court) return;
+
+        // If court is available, start reservation game
+        const now = Date.now();
+        const durationMinutes = state.settings.defaultGameDuration || 15;
+        const newGameId = generateId();
+
+        // Create player entries if not already present
+        const createdPlayerIds: string[] = [];
+        res.playerNames.forEach((name) => {
+          let existing = state.players.find((p) => p.name.toLowerCase() === name.toLowerCase());
+          if (!existing) {
+            existing = get().addPlayer(name, 'low-intermediate');
+          }
+          createdPlayerIds.push(existing.id);
+        });
+
+        const half = Math.ceil(createdPlayerIds.length / 2);
+        const teamAIds = createdPlayerIds.slice(0, half);
+        const teamBIds = createdPlayerIds.slice(half);
+
+        const newGame: Game = {
+          id: newGameId,
+          courtId: court.id,
+          courtName: court.name,
+          teamA: { playerIds: teamAIds },
+          teamB: { playerIds: teamBIds },
+          score: createInitialScore(state.settings.scoringMode || 'manual', 11, 2, 'A'),
+          history: [],
+          startedAt: now,
+          endsAt: now + durationMinutes * 60 * 1000,
+          durationMinutes,
+          status: 'playing',
+        };
+
+        set((s) => ({
+          reservations: s.reservations.map((r) =>
+            r.id === id ? { ...r, status: 'active' as const } : r
+          ),
+          courts: s.courts.map((c) =>
+            c.id === court.id
+              ? {
+                  ...c,
+                  status: 'playing',
+                  currentGameId: newGameId,
+                  playerIds: createdPlayerIds,
+                  teamAIds,
+                  teamBIds,
+                  startedAt: now,
+                  endsAt: now + durationMinutes * 60 * 1000,
+                  durationMinutes,
+                }
+              : c
+          ),
+          activeGames: {
+            ...s.activeGames,
+            [newGameId]: newGame,
+          },
+          players: s.players.map((p) =>
+            createdPlayerIds.includes(p.id) ? { ...p, status: 'playing', gamesPlayed: p.gamesPlayed + 1 } : p
+          ),
+        }));
+
+        get().addNotification({
+          courtName: court.name,
+          playerName: res.reservedFor,
+          type: 'court_ready',
+          title: 'Reservation Checked In',
+          message: `${res.reservedFor} checked into ${court.name}.`,
+        });
+
+        tabSyncBus.notifyStateChanged();
+      },
+
+      addNotification: (notif: Omit<PlayerNotification, 'id' | 'timestamp' | 'read'>) => {
+        const newNotif: PlayerNotification = {
+          ...notif,
+          id: generateId(),
+          timestamp: Date.now(),
+          read: false,
+        };
+        set((state) => ({
+          notifications: [newNotif, ...state.notifications].slice(0, 50),
+        }));
+        tabSyncBus.notifyStateChanged();
+        return newNotif;
+      },
+
+      markNotificationRead: (id: string) => {
+        set((state) => ({
+          notifications: state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        }));
+      },
+
+      clearNotifications: () => {
+        set({ notifications: [] });
+        tabSyncBus.notifyStateChanged();
       },
 
       createQueueGroup: (playerIds: string[]) => {
@@ -829,7 +1049,9 @@ export const usePickleballStore = create<PickleballStoreState>()(
           courts: demo.courts,
           activeGames: demo.activeGames,
           queue: demo.queue,
-          games: [],
+          games: demo.games,
+          reservations: demo.reservations,
+          notifications: demo.notifications,
           session: {
             id: generateId(),
             venueName: 'Smash Point Pickleball',
@@ -842,14 +1064,18 @@ export const usePickleballStore = create<PickleballStoreState>()(
             defaultGameDuration: 15,
             venueName: 'Smash Point Pickleball',
             sessionName: 'Tuesday Evening League',
+            tier: 'premium',
+            brandAccent: 'emerald',
+            marqueeMessage: 'Welcome to Smash Point Pickleball • Games are 15 minutes • Check your court number when called • Good luck & have fun!',
           },
         }));
+        tabSyncBus.notifyStateChanged();
       },
 
       exportBackupJson: () => {
         const state = get();
         const backupData = {
-          version: '1.2.0',
+          version: '1.3.0',
           exportedAt: new Date().toISOString(),
           venueName: state.settings.venueName,
           session: state.session,
@@ -859,6 +1085,8 @@ export const usePickleballStore = create<PickleballStoreState>()(
           queue: state.queue,
           games: state.games,
           activeGames: state.activeGames,
+          reservations: state.reservations,
+          notifications: state.notifications,
         };
         return JSON.stringify(backupData, null, 2);
       },
@@ -876,6 +1104,8 @@ export const usePickleballStore = create<PickleballStoreState>()(
             queue: data.queue || [],
             games: data.games || [],
             activeGames: data.activeGames || {},
+            reservations: data.reservations || [],
+            notifications: data.notifications || [],
             session: data.session || {
               id: generateId(),
               venueName: data.settings?.venueName || 'Imported Session',
@@ -885,6 +1115,7 @@ export const usePickleballStore = create<PickleballStoreState>()(
             settings: { ...DEFAULT_SETTINGS, ...(data.settings || {}) },
           });
 
+          tabSyncBus.notifyStateChanged();
           return true;
         } catch {
           return false;
@@ -909,9 +1140,18 @@ export const usePickleballStore = create<PickleballStoreState>()(
             winBy: state.settings?.winBy ?? DEFAULT_SETTINGS.winBy,
             showServingTeam: state.settings?.showServingTeam ?? DEFAULT_SETTINGS.showServingTeam,
             gameEndingRule: state.settings?.gameEndingRule ?? DEFAULT_SETTINGS.gameEndingRule,
+            tier: state.settings?.tier || 'premium',
+            brandAccent: state.settings?.brandAccent || 'emerald',
+            marqueeMessage: state.settings?.marqueeMessage || DEFAULT_SETTINGS.marqueeMessage,
+            allowDirectQueueJoin: state.settings?.allowDirectQueueJoin ?? true,
+            realtimeSyncEnabled: state.settings?.realtimeSyncEnabled ?? true,
           };
-          // Ensure activeGames object exists
+          // Ensure arrays and objects exist
           state.activeGames = state.activeGames || {};
+          state.games = state.games || [];
+          state.reservations = state.reservations || [];
+          state.notifications = state.notifications || [];
+
           // If first run and hasn't completed tutorial, start tutorial
           if (!state.settings.hasCompletedTutorial) {
             state.startTutorial();

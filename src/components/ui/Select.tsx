@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useId,
 } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, AlertCircle } from 'lucide-react';
 
 export interface SelectOption {
   value: string | number;
@@ -72,7 +72,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const listboxRef = useRef<HTMLDivElement>(null);
 
-    // Merge internal and external refs
     const setRefs = (element: HTMLButtonElement | null) => {
       triggerRef.current = element;
       if (typeof ref === 'function') {
@@ -82,11 +81,9 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       }
     };
 
-    // Determine controlled vs uncontrolled value
     const isControlled = value !== undefined;
     const currentValue = isControlled ? value : internalValue;
 
-    // Parse options from either `options` prop or child <option> elements
     const parsedOptions: SelectOption[] = useMemo(() => {
       if (options) return options;
       const opts: SelectOption[] = [];
@@ -103,12 +100,10 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       return opts;
     }, [options, children]);
 
-    // Find the currently selected option object
     const selectedOption = parsedOptions.find(
       (opt) => String(opt.value) === String(currentValue)
     );
 
-    // Check position to flip upward if near viewport bottom
     useEffect(() => {
       if (isOpen && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
@@ -122,7 +117,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       }
     }, [isOpen]);
 
-    // Click outside to close dropdown
     useEffect(() => {
       if (!isOpen) return;
 
@@ -143,7 +137,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       };
     }, [isOpen]);
 
-    // Scroll highlighted option into view
     useEffect(() => {
       if (isOpen && highlightedIndex >= 0 && listboxRef.current) {
         const items = listboxRef.current.querySelectorAll('[role="option"]');
@@ -154,7 +147,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       }
     }, [highlightedIndex, isOpen]);
 
-    // Update highlighted index when opening
     useEffect(() => {
       if (isOpen) {
         const index = parsedOptions.findIndex(
@@ -183,7 +175,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       triggerRef.current?.focus();
     };
 
-    // Keyboard navigation
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (disabled) return;
 
@@ -243,18 +234,19 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     };
 
     return (
-      <div className={`space-y-1 ${containerClassName}`}>
+      <div className={`space-y-1.5 ${containerClassName}`}>
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider cursor-pointer"
+            className={`block text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors ${
+              error ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-zinc-300'
+            }`}
           >
             {label}
           </label>
         )}
 
         <div ref={containerRef} className="relative">
-          {/* Hidden input for standard form integration */}
           {name && (
             <input
               type="hidden"
@@ -264,7 +256,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             />
           )}
 
-          {/* Trigger button */}
           <button
             type="button"
             id={selectId}
@@ -276,7 +267,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             aria-expanded={isOpen}
             className={`w-full flex items-center justify-between gap-2 text-left bg-slate-50 dark:bg-zinc-950 border text-slate-900 dark:text-zinc-100 font-medium transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-zinc-900 shadow-2xs touch-manipulation select-none ${
               error
-                ? 'border-rose-400 dark:border-rose-500/60 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+                ? 'border-rose-500 dark:border-rose-500/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/10'
                 : isOpen
                 ? 'border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-500/20 bg-white dark:bg-zinc-900'
                 : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
@@ -311,7 +302,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             />
           </button>
 
-          {/* Dropdown Menu Popover */}
           {isOpen && (
             <div
               ref={listboxRef}
@@ -374,7 +364,12 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           )}
         </div>
 
-        {error && <p className="text-xs text-rose-500 dark:text-rose-400 mt-1">{error}</p>}
+        {error && (
+          <p className="text-xs text-rose-500 dark:text-rose-400 flex items-center gap-1.5 font-medium mt-1 animate-in fade-in duration-150">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </p>
+        )}
         {helperText && !error && (
           <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1">{helperText}</p>
         )}
